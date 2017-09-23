@@ -23,9 +23,13 @@ $(OBJ_DIR)/%.o: %.c $(HEADERS)
 run: all
 	./$(TARGET)
 
-test: all ./tests/buffer_test.c
+test: all ./tests/buffer_test.o ./tests/selector_test.o ./tests/stm_test.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o ./tests/buffer_test.test ./tests/buffer_test.o $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o ./tests/selector_test.test ./tests/selector_test.o $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o ./tests/stm_test.test ./tests/stm_test.o $(LIBS)
 	./tests/buffer_test.test
+	./tests/selector_test.test
+	./tests/stm_test.test
 
 clean:
 	@rm -Rf $(OBJ_DIR) $(TARGET)
