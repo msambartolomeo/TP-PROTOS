@@ -1,4 +1,5 @@
 *obj
 server/server
 client/client
+build/*
 .vscode
