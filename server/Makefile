@@ -2,8 +2,8 @@ TARGET = server
 OBJ_DIR = obj
 INCLUDE_DIRS = include
 
-SRCS  = $(shell find . -type f -name *.c)
-HEADERS = $(shell find . -type f -name *.h) $(shell find include -type f -name *.h)
+SRCS  = $(wildcard *.c)
+HEADERS = $(wildcard *.h) $(wildcard include/*.h)
 INCLUDES = $(addprefix -I ,$(INCLUDE_DIRS))
 OBJS = $(SRCS:%.c=$(OBJ_DIR)/%.o)
 
@@ -21,7 +21,7 @@ $(OBJ_DIR)/%.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -c $<
 
 run: all
-	@./$(TARGET)
+	./$(TARGET)
 
 clean:
 	@rm -Rf $(OBJ_DIR) $(TARGET)

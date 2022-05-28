@@ -2,8 +2,8 @@ TARGET = client
 OBJ_DIR = obj
 INCLUDE_DIRS = include
 
-SRCS  = $(shell find . -type f -name *.c)
-HEADERS = $(shell find . -type f -name *.h) $(shell find include -type f -name *.h)
+SRCS  = $(shell find . -type f -name '*.c')
+HEADERS = $(shell find . -type f -name '*.h') $(shell find include -type f -name '*.h')
 INCLUDES = $(addprefix -I ,$(INCLUDE_DIRS))
 OBJS = $(SRCS:%.c=$(OBJ_DIR)/%.o)
 
