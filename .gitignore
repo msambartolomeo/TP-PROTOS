@@ -1,0 +1,4 @@
+*obj
+server/server
+client/client
+.vscode
