@@ -13,13 +13,19 @@ static int clientSocket = -1;
 static int serverSocket = -1;
 
 void closeConnection() {
-    close(serverSocket);
-    close(clientSocket);
+    if(serverSocket != -1)
+        close(serverSocket);
+    if(clientSocket != -1)
+        close(clientSocket);
     serverSocket = -1;
     clientSocket = -1;
     buffer_reset(&serverSendBuf);
     buffer_reset(&clientSendBuf);
     printf("CONNECTION CLOSED\n");
+}
+
+void networkHandlerCleanup() {
+    closeConnection();
 }
 
 int networkHandler() {
@@ -182,7 +188,7 @@ int networkHandler() {
         }
     }
 
-    error:
+error:
     if (error_msg){
         perror(error_msg);
         return -1;

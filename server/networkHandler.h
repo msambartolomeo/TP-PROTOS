@@ -17,3 +17,4 @@
 #include <buffer.h>
 
 int networkHandler();
+void networkHandlerCleanup();
