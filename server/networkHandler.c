@@ -2,7 +2,7 @@
 
 #define DEFAULT_CLIENT_PORT 1080
 #define DEFAULT_SERVER_PORT 80
-#define SEND_BUF_SIZE 4096
+#define SEND_BUF_SIZE 1024
 
 static buffer serverSendBuf;
 static buffer clientSendBuf;
@@ -63,13 +63,15 @@ int networkHandler() {
         FD_SET(passiveSocket, &read_fds);
 
         if(clientSocket != -1) {
-            FD_SET(clientSocket, &read_fds);
+            if(buffer_can_write(&serverSendBuf))
+                FD_SET(clientSocket, &read_fds);
             if(buffer_can_read(&clientSendBuf))
                 FD_SET(clientSocket, &write_fds);   
         }
             
         if(serverSocket != -1) {
-            FD_SET(serverSocket, &read_fds);
+            if(buffer_can_write(&clientSendBuf))
+                FD_SET(serverSocket, &read_fds);
             if(buffer_can_read(&serverSendBuf))
                 FD_SET(serverSocket, &write_fds);
         } 
