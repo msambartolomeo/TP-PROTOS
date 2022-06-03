@@ -1,14 +1,16 @@
 #pragma once
 
-#include "stdint.h"
+#include <stdint.h>
 #include "buffer.h"
 #include <stdbool.h>
 
 static const uint8_t SOCKS_VERSION = 0x05;
 
-static const uint8_t METHOD_NO_AUTHENTICATION_REQUIRED = 0x00;
-static const uint8_t METHOD_USERNAME_PASSWORD = 0x02;
-static const uint8_t METHOD_NO_ACCEPTABLE_METHODS = 0xFF;
+enum connection_method {
+    method_no_authentication_required = 0x00,
+    method_username_password = 0x02,
+    method_no_acceptable_methods = 0xFF,
+};
 
 /*
  *  The client connects to the server, and sends a version
@@ -56,8 +58,8 @@ enum connection_state connection_parse(struct connection_parser *parser, buffer 
  *  If the selected METHOD is X'FF', none of the methods listed by the
  *  client are acceptable, and the client MUST close the connection.
  */
-int generate_connection_response(buffer *buf, uint8_t method);
+int generate_connection_response(buffer *buf, enum connection_method method);
 
 const char * connection_error(enum connection_state state);
 
-bool connection_finished(enum connection_state state, bool *error);
+bool is_connection_finished(enum connection_state state, bool *error);

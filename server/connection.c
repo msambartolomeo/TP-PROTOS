@@ -5,7 +5,7 @@
 void connection_parser_init(struct connection_parser *parser) {
     parser->methods_remaining = 0;
     parser->state = connection_version;
-    parser->selected_method = METHOD_NO_ACCEPTABLE_METHODS;
+    parser->selected_method = method_no_acceptable_methods;
 }
 
 void connection_parse_byte(struct connection_parser *parser, uint8_t byte) {
@@ -22,7 +22,7 @@ void connection_parse_byte(struct connection_parser *parser, uint8_t byte) {
             }
             break;
         case connection_methods:
-            if (byte == METHOD_USERNAME_PASSWORD || (byte == METHOD_NO_AUTHENTICATION_REQUIRED && parser->selected_method != METHOD_USERNAME_PASSWORD)) {
+            if (byte == method_username_password || (byte == method_no_authentication_required && parser->selected_method != method_username_password)) {
                 parser->selected_method = byte;
             }
 
@@ -40,7 +40,7 @@ void connection_parse_byte(struct connection_parser *parser, uint8_t byte) {
     }
 }
 
-bool connection_finished(enum connection_state state, bool *error) {
+bool is_connection_finished(enum connection_state state, bool *error) {
     if (state == connection_error_unsupported_version) {
         *error = true;
         return true;
@@ -52,14 +52,14 @@ enum connection_state connection_parse(struct connection_parser *parser, buffer 
     while (buffer_can_read(buf)) {
         const uint8_t b = buffer_read(buf);
         connection_parse_byte(parser, b);
-        if (connection_finished(parser->state, error)) {
+        if (is_connection_finished(parser->state, error)) {
             break;
         }
     }
     return parser->state;
 }
 
-int generate_connection_response(buffer *buf, uint8_t method) {
+int generate_connection_response(buffer *buf, enum connection_method method) {
     size_t n;
     uint8_t *buf_ptr = buffer_write_ptr(buf, &n);
     if (n < 2) {
