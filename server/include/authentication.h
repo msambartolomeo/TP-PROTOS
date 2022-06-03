@@ -37,13 +37,14 @@ enum authentication_state {
 };
 
 typedef struct credentials {
-    char username[256];
-    char password[256];
+    uint8_t username[256];
+    uint8_t password[256];
 } authentication_credentials;
 
 struct authentication_parser {
     enum authentication_state state;
     uint8_t remaining;
+    uint8_t *pointer;
     authentication_credentials credentials;
 };
 

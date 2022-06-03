@@ -8,7 +8,7 @@ INCLUDES = $(addprefix -I ,$(INCLUDE_DIRS))
 OBJS = $(SRCS:%.c=$(OBJ_DIR)/%.o)
 
 CC = gcc
-CFLAGS = -g -O2 -Wall $(INCLUDES)
+CFLAGS = -g -O2 -std=c11 -Wall $(INCLUDES)
 LDFLAGS = -lm
 
 all: $(TARGET)
