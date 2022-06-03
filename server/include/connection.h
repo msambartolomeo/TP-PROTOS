@@ -6,10 +6,10 @@
 
 static const uint8_t SOCKS_VERSION = 0x05;
 
-enum connection_method {
-    method_no_authentication_required = 0x00,
-    method_username_password = 0x02,
-    method_no_acceptable_methods = 0xFF,
+enum connectionMethod {
+    METHOD_NO_AUTHENTICATION_REQUIRED = 0x00,
+    METHOD_USERNAME_PASSWORD = 0x02,
+    METHOD_NO_ACCEPTABLE_METHODS = 0xFF,
 };
 
 /*
@@ -27,23 +27,23 @@ enum connection_method {
  *  appear in the METHODS field.
  */
 
-enum connection_state {
-    connection_version,
-    connection_nmethods,
-    connection_methods,
-    connection_done,
-    connection_error_unsupported_version,
+enum connectionState {
+    CONECTION_VERSION,
+    CONECTION_NMETHODS,
+    CONECTION_METHODS,
+    CONECTION_DONE,
+    CONECTION_ERROR_UNSUPPORTED_VERSION,
 };
 
-struct connection_parser {
+struct connectionParser {
     uint8_t selected_method;
-    enum connection_state state;
-    uint8_t methods_remaining;
+    enum connectionState state;
+    uint8_t remaining;
 };
 
-void connection_parser_init(struct connection_parser *parser);
+void connection_parser_init(struct connectionParser *parser);
 
-enum connection_state connection_parse(struct connection_parser *parser, buffer *buf, bool *error);
+enum connectionState connection_parse(struct connectionParser *parser, buffer *buf, bool *error);
 
 /*
  *  The server selects from one of the methods given in METHODS, and
@@ -58,8 +58,8 @@ enum connection_state connection_parse(struct connection_parser *parser, buffer 
  *  If the selected METHOD is X'FF', none of the methods listed by the
  *  client are acceptable, and the client MUST close the connection.
  */
-int generate_connection_response(buffer *buf, enum connection_method method);
+int generate_connection_response(buffer *buf, enum connectionMethod method);
 
-const char * connection_error(enum connection_state state);
+const char * connection_error(enum connectionState state);
 
-bool is_connection_finished(enum connection_state state, bool *error);
+bool is_connection_finished(enum connectionState state, bool *error);

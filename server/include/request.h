@@ -33,48 +33,48 @@ static const uint8_t SOCKS_VERSION = 0x05;
  *           order
  */
 
-enum socks_command {
-    socks_command_connect = 0x01,
-    socks_command_bind = 0x02,
-    socks_command_udp_associate = 0x03,
+enum socksCommand {
+    COMMAND_CONNECT = 0x01,
+    COMMAND_BIND = 0x02,
+    COMMAND_UDP_ASSOCIATE = 0x03,
 };
 
-enum socks_address_type {
-    socks_address_type_ipv4 = 0x01,
-    socks_address_type_domainname = 0x03,
-    socks_address_type_ipv6 = 0x04,
+enum socksAddressType {
+    ADDRESS_TYPE_IPV4 = 0x01,
+    ADDRESS_TYPE_DOMAINNAME = 0x03,
+    ADDRESS_TYPE_IPV6 = 0x04,
 };
 
-enum request_state {
-    request_version,
-    request_command,
-    request_reserved,
-    request_address_type,
-    request_destination_address_fqdn,
-    request_destination_address,
-    request_destination_port,
-    request_done,
-    request_error_unsupported_version,
-    request_error_unsupported_command,
-    request_error_unsupported_address_type,
+enum requestState {
+    REQUEST_VERSION,
+    REQUEST_COMMAND,
+    REQUEST_RESERVED,
+    REQUEST_ADDRESS_TYPE,
+    REQUEST_DST_ADDRESS_FQDN,
+    REQUEST_DST_ADDRESS,
+    REQUEST_DST_PORT,
+    REQUEST_DONE,
+    REQUEST_ERROR_UNSUPPORTED_VERSION,
+    REQUEST_ERROR_UNSUPPORTED_COMMAND,
+    REQUEST_ERROR_UNSUPPORTED_ADDRESS_TYPE,
 };
 
-union socks_addr {
+union socksAddr {
     struct sockaddr_in ipv4;
     struct sockaddr_in6 ipv6;
     char fqdn[256];
 };
 
 typedef struct request {
-    enum socks_command command;
-    enum socks_address_type address_type;
-    union socks_addr destination;
+    enum socksCommand command;
+    enum socksAddressType address_type;
+    union socksAddr destination;
     in_port_t port;
 } socks_request;
 
-struct request_parser {
-    socks_request request;
-    enum request_state state;
+struct requestParser {
+    struct request request;
+    enum requestState state;
     uint8_t address_type_remaining;
 };
 
@@ -113,24 +113,24 @@ struct request_parser {
  *         o  BND.PORT       server bound port in network octet order
  */
 
-enum socks_response_status {
-    status_succeeded = 0x00,
-    status_general_server_failure = 0x01,
-    status_connection_not_allowed_by_ruleset = 0x02,
-    status_network_unreachable = 0x03,
-    status_host_unreachable = 0x04,
-    status_connection_refused = 0x05,
-    status_ttl_expired = 0x06,
-    status_command_not_supported = 0x07,
-    status_address_type_not_supported = 0x08,
+enum socksResponseStatus {
+    STATUS_SUCCEDED = 0x00,
+    STATUS_GENERAL_SERVER_FAILURE = 0x01,
+    STATUS_CONNECTION_NOT_ALLOWED_BY_RULESET = 0x02,
+    STATUS_NETWORK_UNREACHABLE = 0x03,
+    STATUS_HOST_UNREACHABLE = 0x04,
+    STATUS_CONNECTION_REFUSED = 0x05,
+    STATUS_TTL_EXPIRED = 0x06,
+    STATUS_COMMAND_NOT_SUPPORTED = 0x07,
+    STATUS_ADDRESS_TYPE_NOT_SUPPORTED = 0x08,
 };
 
-void request_parser_init(struct request_parser *parser);
+void request_parser_init(struct requestParser *parser);
 
-enum request_state request_parse(struct request_parser *parser, buffer *buf, bool *error);
+enum requestState request_parse(struct requestParser *parser, buffer *buf, bool *error);
 
 int generate_response(buffer *buf /* TODO: arguments */);
 
-const char * request_error(enum request_state state);
+const char * request_error(enum requestState state);
 
-bool is_request_finished(enum request_state state, bool *error);
+bool is_request_finished(enum requestState state, bool *error);

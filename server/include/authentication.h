@@ -26,14 +26,14 @@ static const uint8_t AUTHENTICATION_VERSION = 0x01;
  *  association with the given UNAME.
  */
 
-enum authentication_state {
-    authentication_version,
-    authentication_username_length,
-    authentication_username,
-    authentication_password_length,
-    authentication_password,
-    authentication_done,
-    authentication_error_unsupported_version,
+enum authenticationState {
+    AUTHENTICATION_STATE_VERSION,
+    AUTHENTICATION_USERNAME_LENGTH,
+    AUTHENTICATION_USERNAME,
+    AUTHENTICATION_PASSWORD_LENGTH,
+    AUTHENTICATION_PASSWORD,
+    AUTHENTICATION_DONE,
+    AUTHENTICATION_ERROR_UNSUPPORTED_VERSION,
 };
 
 typedef struct credentials {
@@ -41,17 +41,17 @@ typedef struct credentials {
     uint8_t password[256];
 } authentication_credentials;
 
-struct authentication_parser {
-    enum authentication_state state;
+struct authenticationParser {
+    enum authenticationState state;
     uint8_t remaining;
     uint8_t *pointer;
     authentication_credentials credentials;
 };
 
 
-void authentication_parser_init(struct authentication_parser *parser);
+void authentication_parser_init(struct authenticationParser *parser);
 
-enum authentication_state authentication_parse(struct authentication_parser *parser, buffer *buf, bool *error);
+enum authenticationState authentication_parse(struct authenticationParser *parser, buffer *buf, bool *error);
 
 /*
  *  The server verifies the supplied UNAME and PASSWD, and sends the
@@ -69,6 +69,6 @@ enum authentication_state authentication_parse(struct authentication_parser *par
  */
 int generate_authentication_response(buffer *buf, uint8_t status);
 
-const char * authentication_error(enum authentication_state state);
+const char * authentication_error(enum authenticationState state);
 
-bool is_authentication_finished(enum authentication_state state, bool *error);
+bool is_authentication_finished(enum authenticationState state, bool *error);
