@@ -34,6 +34,7 @@ enum connection_state {
 };
 
 struct connection_parser {
+    uint8_t selected_method;
     enum connection_state state;
     uint8_t methods_remaining;
 };
@@ -58,3 +59,5 @@ enum connection_state connection_parse(struct connection_parser *parser, buffer 
 int generate_connection_response(buffer *buf, uint8_t method);
 
 const char * connection_error(enum connection_state state);
+
+bool connection_finished(enum connection_state state, bool *error);

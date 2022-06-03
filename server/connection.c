@@ -5,6 +5,7 @@
 void connection_parser_init(struct connection_parser *parser) {
     parser->methods_remaining = 0;
     parser->state = connection_version;
+    parser->selected_method = METHOD_NO_ACCEPTABLE_METHODS;
 }
 
 void connection_parse_byte(struct connection_parser *parser, uint8_t byte) {
@@ -21,7 +22,10 @@ void connection_parse_byte(struct connection_parser *parser, uint8_t byte) {
             }
             break;
         case connection_methods:
-            // TODO: save method with function or in parser struct
+            if (byte == METHOD_USERNAME_PASSWORD || (byte == METHOD_NO_AUTHENTICATION_REQUIRED && parser->selected_method != METHOD_USERNAME_PASSWORD)) {
+                parser->selected_method = byte;
+            }
+
             parser->methods_remaining--;
             if (parser->methods_remaining == 0) {
                 parser->state = connection_done;
