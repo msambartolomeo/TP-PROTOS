@@ -8,7 +8,7 @@ void connection_parser_init(struct connectionParser *parser) {
     parser->selected_method = METHOD_NO_ACCEPTABLE_METHODS;
 }
 
-void connection_parse_byte(struct connectionParser *parser, uint8_t byte) {
+static void connection_parse_byte(struct connectionParser *parser, uint8_t byte) {
     switch (parser->state) {
         case CONECTION_VERSION:
             parser->state = byte == SOCKS_VERSION ? CONECTION_NMETHODS : CONECTION_ERROR_UNSUPPORTED_VERSION;

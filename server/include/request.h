@@ -39,6 +39,24 @@ enum socksCommand {
     COMMAND_UDP_ASSOCIATE = 0x03,
 };
 
+/*
+ *  In an address field (DST.ADDR, BND.ADDR), the ATYP field specifies
+ *  the type of address contained within the field:
+ *
+ *         o  X'01'
+ *
+ *  the address is a version-4 IP address, with a length of 4 octets
+ *
+ *         o  X'03'
+ *
+ *  the address field contains a fully-qualified domain name.  The first
+ *  octet of the address field contains the number of octets of name that
+ *  follow, there is no terminating NUL octet.
+ *
+ *         o  X'04'
+ *
+ *  the address is a version-6 IP address, with a length of 16 octets.
+ */
 enum socksAddressType {
     ADDRESS_TYPE_IPV4 = 0x01,
     ADDRESS_TYPE_DOMAINNAME = 0x03,
@@ -54,6 +72,7 @@ enum requestState {
     REQUEST_DST_ADDRESS,
     REQUEST_DST_PORT,
     REQUEST_DONE,
+    REQUEST_ERROR_MISSING_RSV,
     REQUEST_ERROR_UNSUPPORTED_VERSION,
     REQUEST_ERROR_UNSUPPORTED_COMMAND,
     REQUEST_ERROR_UNSUPPORTED_ADDRESS_TYPE,
@@ -62,20 +81,33 @@ enum requestState {
 union socksAddr {
     struct sockaddr_in ipv4;
     struct sockaddr_in6 ipv6;
-    char fqdn[256];
+    uint8_t fqdn[256];
 };
 
-typedef struct request {
+typedef struct socksRequest {
     enum socksCommand command;
     enum socksAddressType address_type;
     union socksAddr destination;
     in_port_t port;
-} socks_request;
+} socksRequest;
 
 struct requestParser {
-    struct request request;
+    socksRequest request;
     enum requestState state;
-    uint8_t address_type_remaining;
+    uint8_t remaining;
+    uint8_t *pointer;
+};
+
+enum socksResponseStatus {
+    STATUS_SUCCEDED = 0x00,
+    STATUS_GENERAL_SERVER_FAILURE = 0x01,
+    STATUS_CONNECTION_NOT_ALLOWED_BY_RULESET = 0x02,
+    STATUS_NETWORK_UNREACHABLE = 0x03,
+    STATUS_HOST_UNREACHABLE = 0x04,
+    STATUS_CONNECTION_REFUSED = 0x05,
+    STATUS_TTL_EXPIRED = 0x06,
+    STATUS_COMMAND_NOT_SUPPORTED = 0x07,
+    STATUS_ADDRESS_TYPE_NOT_SUPPORTED = 0x08,
 };
 
 /*
@@ -112,24 +144,18 @@ struct requestParser {
  *         o  BND.ADDR       server bound address
  *         o  BND.PORT       server bound port in network octet order
  */
-
-enum socksResponseStatus {
-    STATUS_SUCCEDED = 0x00,
-    STATUS_GENERAL_SERVER_FAILURE = 0x01,
-    STATUS_CONNECTION_NOT_ALLOWED_BY_RULESET = 0x02,
-    STATUS_NETWORK_UNREACHABLE = 0x03,
-    STATUS_HOST_UNREACHABLE = 0x04,
-    STATUS_CONNECTION_REFUSED = 0x05,
-    STATUS_TTL_EXPIRED = 0x06,
-    STATUS_COMMAND_NOT_SUPPORTED = 0x07,
-    STATUS_ADDRESS_TYPE_NOT_SUPPORTED = 0x08,
-};
+typedef struct SocksResponse {
+    enum socksResponseStatus status;
+    enum socksAddressType address_type;
+    union socksAddr address;
+    in_port_t port;
+} socksResponse;
 
 void request_parser_init(struct requestParser *parser);
 
 enum requestState request_parse(struct requestParser *parser, buffer *buf, bool *error);
 
-int generate_response(buffer *buf /* TODO: arguments */);
+size_t generate_response(buffer *buf, socksResponse *response);
 
 const char * request_error(enum requestState state);
 
