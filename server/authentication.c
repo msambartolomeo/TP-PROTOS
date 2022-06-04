@@ -4,8 +4,6 @@
 
 void authentication_parser_init(struct authenticationParser *parser) {
     parser->state = AUTHENTICATION_STATE_VERSION;
-    parser->credentials.username[0] = 0;
-    parser->credentials.password[0] = 0;
     parser->remaining = 0;
     parser->pointer = NULL;
 }
@@ -28,6 +26,7 @@ static void handle_length(struct authenticationParser *parser, uint8_t length, e
         parser->remaining = length;
         parser->state = next;
         parser->pointer = pointer;
+        parser->pointer[length] = 0;
     }
 }
 
