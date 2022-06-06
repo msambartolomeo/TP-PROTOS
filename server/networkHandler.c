@@ -3,7 +3,7 @@
 #define DEFAULT_CLIENT_PORT 1080
 #define DEFAULT_SERVER_PORT 80
 #define SEND_BUF_SIZE 1024
-#define SELECTOR_TIMEOUT 10
+#define SELECTOR_TIMEOUT 100
 
 static buffer serverSendBuf;
 static buffer clientSendBuf;
@@ -13,6 +13,7 @@ static uint8_t clientSendBufData[SEND_BUF_SIZE];
 static fd_selector selector;
 
 static int serverSocket = -1, clientSocket = -1;
+static int serverInterests = 0, clientInterests = 0;
 
 void networkSelectorSignalHandler()
 {
@@ -46,7 +47,11 @@ void networkHandlerCleanup()
 
 void serverSocketReadHandler(struct selector_key *key)
 {
-    if(!buffer_can_write(&clientSendBuf)) return;
+    if(!buffer_can_write(&clientSendBuf)){
+        serverInterests &= ~OP_READ;
+        selector_set_interest(selector, serverSocket, serverInterests);
+        return;
+    }
 
     size_t wbytes;
     uint8_t *bufptr = buffer_write_ptr(&clientSendBuf, &wbytes);
@@ -68,13 +73,20 @@ void serverSocketReadHandler(struct selector_key *key)
         printf("\n\n");
 
         buffer_write_adv(&clientSendBuf, len);
+
+        clientInterests |= OP_WRITE; 
+        selector_set_interest(selector, clientSocket, clientInterests);
     }
 }
 
 
 void serverSocketWriteHandler(struct selector_key *key)
 {
-    if(!buffer_can_read(&serverSendBuf)) return;
+    if(!buffer_can_read(&serverSendBuf)){
+        serverInterests &= ~OP_WRITE;
+        selector_set_interest(selector, serverSocket, serverInterests);
+        return;
+    }
 
     size_t rbytes;
     uint8_t *bufptr = buffer_read_ptr(&serverSendBuf, &rbytes);
@@ -91,12 +103,18 @@ void serverSocketWriteHandler(struct selector_key *key)
     else
     {
         buffer_read_adv(&serverSendBuf, len);
+        clientInterests |= OP_READ;
+        selector_set_interest(selector, clientSocket, clientInterests);
     }
 }
 
 void clientSocketReadHandler(struct selector_key *key)
 {
-    if(!buffer_can_write(&serverSendBuf)) return;
+    if(!buffer_can_write(&serverSendBuf)){
+        clientInterests &= ~OP_READ;
+        selector_set_interest(selector, clientSocket, clientInterests);
+        return;
+    }
 
     size_t wbytes;
     uint8_t *bufptr = buffer_write_ptr(&serverSendBuf, &wbytes);
@@ -105,8 +123,9 @@ void clientSocketReadHandler(struct selector_key *key)
 
     if (len <= 0)
     {
-        if (len == -1) {}
+        if (len == -1) {
             perror("CLIENT READ ERROR");
+        }
 
         closeConnection();
     }
@@ -116,12 +135,19 @@ void clientSocketReadHandler(struct selector_key *key)
         printf("\n\n");
 
         buffer_write_adv(&serverSendBuf, len);
+
+        serverInterests |= OP_WRITE;
+        selector_set_interest(selector, serverSocket, serverInterests);
     }
 }
 
 void clientSocketWriteHandler(struct selector_key *key)
 {
-    if(!buffer_can_read(&clientSendBuf)) return;
+    if(!buffer_can_read(&clientSendBuf)) {
+        clientInterests &= ~OP_WRITE;
+        selector_set_interest(selector, clientSocket, clientInterests);
+        return;
+    }
 
     size_t rbytes;
     uint8_t *bufptr = buffer_read_ptr(&clientSendBuf, &rbytes);
@@ -138,6 +164,8 @@ void clientSocketWriteHandler(struct selector_key *key)
     else
     {
         buffer_read_adv(&clientSendBuf, len);
+        serverInterests |= OP_READ;
+        selector_set_interest(selector, serverSocket, serverInterests);
     }
 }
 
@@ -187,10 +215,11 @@ void passiveSocketHandler(struct selector_key *key)
         return;
     }
 
-    selector_register(selector, serverSocket, &selectorServerFdHandler, OP_READ | OP_WRITE, NULL); // TODO: CHEQUEAR ERROR
-    selector_register(selector, clientSocket, &selectorClientFdHandler, OP_READ | OP_WRITE, NULL); // TODO: CHEQUEAR ERROR
+    serverInterests = clientInterests = OP_READ;
+    selector_register(selector, serverSocket, &selectorServerFdHandler, serverInterests, NULL); // TODO: CHEQUEAR ERROR
+    selector_register(selector, clientSocket, &selectorClientFdHandler, clientInterests, NULL); // TODO: CHEQUEAR ERROR
 
-    printf("NEW CONNECTION");
+    printf("NEW CONNECTION\n");
 }
 
 const struct fd_handler passiveSocketFdHandler = {passiveSocketHandler, 0};
@@ -260,7 +289,7 @@ int networkHandler()
             fprintf(stderr, "Selector Select Error: %s", selector_error(selectorStatus));
             exit(1);
         }
-        printf("SELECT");
+        fflush(stdout);
     }
 
 error:
