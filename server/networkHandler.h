@@ -15,6 +15,7 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <buffer.h>
+#include <selector.h>
 
 int networkHandler();
 void networkHandlerCleanup();
