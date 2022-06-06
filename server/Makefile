@@ -8,7 +8,7 @@ INCLUDES = $(addprefix -I ,$(INCLUDE_DIRS))
 OBJS = $(SRCS:%.c=$(OBJ_DIR)/%.o)
 
 CC = gcc
-CFLAGS = -pthread -g -fsanitize=address -std=gnu11 -O2 -Wall -pedantic $(INCLUDES)
+CFLAGS = -pthread -g -fsanitize=address -std=gnu11 -Wall -pedantic $(INCLUDES)
 LDFLAGS = -lm
 
 all: $(TARGET)
