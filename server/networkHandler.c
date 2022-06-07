@@ -17,12 +17,12 @@ static fd_selector selector;
 static int serverSocket = -1, clientSocket = -1;
 static int serverInterests = 0, clientInterests = 0;
 
-void networkSelectorSignalHandler()
+static void networkSelectorSignalHandler()
 {
     printf("SIGCHLD SIGNAL");
 }
 
-void closeConnection()
+static void closeConnection()
 {
     if (serverSocket != -1)
     {
@@ -41,13 +41,7 @@ void closeConnection()
     printf("CONNECTION CLOSED\n");
 }
 
-void networkHandlerCleanup()
-{
-    closeConnection();
-    selector_close();
-}
-
-void serverSocketReadHandler(struct selector_key *key)
+static void serverSocketReadHandler(struct selector_key *key)
 {
     if(!buffer_can_write(&clientSendBuf)){
         serverInterests &= ~OP_READ;
@@ -81,8 +75,7 @@ void serverSocketReadHandler(struct selector_key *key)
     }
 }
 
-
-void serverSocketWriteHandler(struct selector_key *key)
+static void serverSocketWriteHandler(struct selector_key *key)
 {
     int error = 0;
     getsockopt(serverSocket, SOL_SOCKET, SO_ERROR, &error, &(socklen_t){sizeof(int)});
@@ -118,7 +111,7 @@ void serverSocketWriteHandler(struct selector_key *key)
     }
 }
 
-void clientSocketReadHandler(struct selector_key *key)
+static void clientSocketReadHandler(struct selector_key *key)
 {
     if(!buffer_can_write(&serverSendBuf)){
         clientInterests &= ~OP_READ;
@@ -151,7 +144,7 @@ void clientSocketReadHandler(struct selector_key *key)
     }
 }
 
-void clientSocketWriteHandler(struct selector_key *key)
+static void clientSocketWriteHandler(struct selector_key *key)
 {
     if(!buffer_can_read(&clientSendBuf)) {
         clientInterests &= ~OP_WRITE;
@@ -179,10 +172,10 @@ void clientSocketWriteHandler(struct selector_key *key)
     }
 }
 
-const struct fd_handler selectorClientFdHandler = {clientSocketReadHandler, clientSocketWriteHandler, 0};
-const struct fd_handler selectorServerFdHandler = {serverSocketReadHandler, serverSocketWriteHandler, 0};
+static const struct fd_handler selectorClientFdHandler = {clientSocketReadHandler, clientSocketWriteHandler, 0};
+static const struct fd_handler selectorServerFdHandler = {serverSocketReadHandler, serverSocketWriteHandler, 0};
 
-void passiveSocketHandler(struct selector_key *key)
+static void passiveSocketHandler(struct selector_key *key)
 {
     int fd = key->fd;
 
@@ -311,4 +304,10 @@ error:
     }
 
     return 0;
+}
+
+void networkHandlerCleanup()
+{
+    closeConnection();
+    selector_close();
 }
