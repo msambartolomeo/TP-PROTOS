@@ -1,6 +1,8 @@
 #pragma once
 #include <unistd.h>
 #include <sys/socket.h>
+#include <stdint.h>
+#include "buffer.h"
 
 int network_handler();
 void network_handler_cleanup();

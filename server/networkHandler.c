@@ -1,13 +1,16 @@
-#include "networkHandler.h"
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/socket.h>
-#include <sys/select.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <buffer.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/select.h>
+#include <sys/signal.h>
+#include <sys/socket.h>
 
+#include "networkHandler.h"
+#include "selector.h"
 
 #define DEFAULT_CLIENT_PORT 1080
 #define DEFAULT_SERVER_PORT 80
@@ -182,8 +185,8 @@ static void client_socket_write_handler(struct selector_key *key)
     }
 }
 
-static const struct fd_handler selectorClientFdHandler = {client_socket_read_handler, client_socket_write_handler, 0};
-static const struct fd_handler selectorServerFdHandler = {server_socket_read_handler, server_socket_write_handler, 0};
+static const struct fd_handler selectorClientFdHandler = {client_socket_read_handler, client_socket_write_handler, 0, 0};
+static const struct fd_handler selectorServerFdHandler = {server_socket_read_handler, server_socket_write_handler, 0, 0};
 
 static void passive_socket_handler(struct selector_key *key)
 {
@@ -207,19 +210,19 @@ static void passive_socket_handler(struct selector_key *key)
     conn->server_socket = -1;
     conn->client_socket = -1;
 
-    struct sockaddr client_addr;
-    conn->client_socket = accept(fd, &client_addr, NULL);
+    struct sockaddr_in client_addr;
+    conn->client_socket = accept(fd, (struct sockaddr*)&client_addr, &(socklen_t){sizeof(struct sockaddr_in)});
     if (conn->client_socket == -1)
     {
         perror("Couldn't connect to client");
         close_connection(conn);
         return;
     }
-    memcpy(&conn->client_addr, &client_addr, sizeof(struct sockaddr));
+    memcpy(&conn->client_addr, &client_addr, sizeof(struct sockaddr_in));
     selector_fd_set_nio(conn->client_socket);
 
     conn->server_socket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
-    if (!conn->server_socket)
+    if (conn->server_socket == -1)
     {
         perror("unable to create socket");
         close_connection(conn);
@@ -230,7 +233,7 @@ static void passive_socket_handler(struct selector_key *key)
     serveraddr.sin_family = AF_INET;
     serveraddr.sin_port = htons(DEFAULT_SERVER_PORT);
 
-    if (inet_aton("127.0.0.1", &serveraddr.sin_addr) <= 0)
+    if (inet_pton(AF_INET, "127.0.0.1", &serveraddr.sin_addr) <= 0)
     {
         perror("inet_aton error");
         close_connection(conn);
@@ -252,7 +255,7 @@ static void passive_socket_handler(struct selector_key *key)
     printf("NEW CONNECTION\n");
 }
 
-const struct fd_handler passiveSocketFdHandler = {passive_socket_handler, 0};
+const struct fd_handler passiveSocketFdHandler = {passive_socket_handler, 0, 0, 0};
 
 int network_handler()
 {
