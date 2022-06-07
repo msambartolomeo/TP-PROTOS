@@ -1,4 +1,12 @@
 #include "networkHandler.h"
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <sys/select.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <buffer.h>
 
 
 #define DEFAULT_CLIENT_PORT 1080

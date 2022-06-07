@@ -1,4 +1,7 @@
 #include "networkHandler.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
 
 static void
 sigterm_handler(const int signal) {

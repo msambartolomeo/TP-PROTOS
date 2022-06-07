@@ -7,23 +7,32 @@ HEADERS = $(wildcard *.h) $(wildcard include/*.h)
 INCLUDES = $(addprefix -I ,$(INCLUDE_DIRS))
 OBJS = $(SRCS:%.c=$(OBJ_DIR)/%.o)
 
-CC = gcc
-CFLAGS = -pthread -g -fsanitize=address -std=gnu11 -Wall -pedantic $(INCLUDES)
-LDFLAGS = -lm
+CFLAGS = -g -fsanitize=address -std=c11 -Wall -pedantic -pedantic-errors -Wextra -Werror -Wno-unused-parameter -Wno-implicit-fallthrough -D_POSIX_C_SOURCE=200112L $(INCLUDES)
+LDFLAGS = -lm -pthread
+LIBS = -lcheck -lsubunit -lrt -lm -lpthread
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET) $(OBJS)
 
 $(OBJ_DIR)/%.o: %.c $(HEADERS)
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 run: all
 	./$(TARGET)
 
+test: all ./tests/buffer_test.o ./tests/selector_test.o ./tests/stm_test.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -o ./tests/buffer_test.test ./tests/buffer_test.o $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o ./tests/selector_test.test ./tests/selector_test.o $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o ./tests/stm_test.test ./tests/stm_test.o $(LIBS)
+	./tests/buffer_test.test
+	./tests/selector_test.test
+	./tests/stm_test.test
+
 clean:
 	@rm -Rf $(OBJ_DIR) $(TARGET)
+	@rm -Rf ./tests/*.o ./tests/*.test
 
 .PHONY: clean
