@@ -9,6 +9,7 @@ OBJS = $(SRCS:%.c=$(OBJ_DIR)/%.o)
 
 CFLAGS = -g -fsanitize=address -std=c11 -Wall -pedantic -pedantic-errors -Wextra -Werror -Wno-unused-parameter -Wno-implicit-fallthrough -D_POSIX_C_SOURCE=200112L $(INCLUDES)
 LDFLAGS = -lm -pthread
+LIBS = -lcheck -lsubunit -lrt -lm -lpthread
 
 all: $(TARGET)
 
@@ -22,7 +23,12 @@ $(OBJ_DIR)/%.o: %.c $(HEADERS)
 run: all
 	./$(TARGET)
 
+test: all ./tests/buffer_test.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o ./tests/buffer_test.test ./tests/buffer_test.o $(LIBS)
+	./tests/buffer_test.test
+
 clean:
 	@rm -Rf $(OBJ_DIR) $(TARGET)
+	@rm -Rf ./tests/*.o ./tests/*.test
 
 .PHONY: clean

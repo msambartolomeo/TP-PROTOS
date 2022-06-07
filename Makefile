@@ -26,5 +26,8 @@ clean:
 	@rm -Rf build
 	@cd server; $(MAKE) clean
 	@cd client; $(MAKE) clean
+
+tests:
+	@cd server; $(MAKE) test
 	
 .PHONY: format clean server client
