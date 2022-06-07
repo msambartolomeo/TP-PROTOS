@@ -7,19 +7,18 @@ HEADERS = $(wildcard *.h) $(wildcard include/*.h)
 INCLUDES = $(addprefix -I ,$(INCLUDE_DIRS))
 OBJS = $(SRCS:%.c=$(OBJ_DIR)/%.o)
 
-CC = gcc
-CFLAGS = -g -O2 -std=c11 -Wall $(INCLUDES)
-LDFLAGS = -pthread
+CFLAGS = -g -fsanitize=address -std=c11 -Wall -pedantic -pedantic-errors -Wextra -Werror -Wno-unused-parameter -Wno-implicit-fallthrough -D_POSIX_C_SOURCE=200112L $(INCLUDES)
+LDFLAGS = -lm -pthread
 LIBS = -lcheck -lsubunit -lrt -lm -lpthread
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(TARGET) $(OBJS)
 
 $(OBJ_DIR)/%.o: %.c $(HEADERS)
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 run: all
 	./$(TARGET)

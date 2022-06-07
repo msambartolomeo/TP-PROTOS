@@ -1,26 +1,26 @@
 SERVER=build/server
 CLIENT=build/client
 
-all: $(SERVER) $(CLIENT)
+all: server client
 
-server: $(SERVER)
-client: $(CLIENT)
-
-$(SERVER):
+server:
 	@cd server; $(MAKE)
 	@mkdir -p build
-	@cp server/server build/server
+	@cp server/server $(SERVER)
 
-$(CLIENT):
+client:
 	@cd client; $(MAKE)
 	@mkdir -p build
-	@cp client/client build/client
+	@cp client/client $(CLIENT)
 
 runserver: $(SERVER)
-	@./build/server
+	@./$(SERVER)
 
 runclient: $(CLIENT)
-	@./build/client
+	@./$(CLIENT)
+
+format:
+	@find . -regex '.*\.\(c\|h\)' -exec clang-format -style=file -i {} \;
 
 clean:
 	@rm -Rf build
@@ -29,5 +29,5 @@ clean:
 
 tests:
 	@cd server; $(MAKE) test
-
-.PHONY: clean
+	
+.PHONY: format clean server client
