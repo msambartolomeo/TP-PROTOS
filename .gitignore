@@ -3,3 +3,4 @@ server/server
 client/client
 build/*
 .vscode
+.idea/*
