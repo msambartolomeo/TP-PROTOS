@@ -19,7 +19,7 @@ sigterm_handler(const int signal) {
     }
 
     printf("\nsignal %s, cleaning up and exiting...\n",sigtype);
-    networkHandlerCleanup();
+    network_handler_cleanup();
     exit(0);
 }
 
@@ -27,7 +27,7 @@ int main(int argc, const char **argv) {
     signal(SIGTERM, sigterm_handler);
     signal(SIGINT, sigterm_handler);
 
-    int retcode = networkHandler();
-    networkHandlerCleanup();
+    int retcode = network_handler();
+    network_handler_cleanup();
     return retcode;
 }
