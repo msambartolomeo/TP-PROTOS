@@ -1,4 +1,12 @@
 #include "networkHandler.h"
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <sys/select.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <buffer.h>
 
 #define DEFAULT_CLIENT_PORT 1080
 #define DEFAULT_SERVER_PORT 80
@@ -101,7 +109,7 @@ int networkHandler() {
             serveraddr.sin_family = AF_INET;
             serveraddr.sin_port = htons(DEFAULT_SERVER_PORT);
             
-            if(inet_aton("127.0.0.1", &serveraddr.sin_addr) <= 0) {
+            if(inet_pton(AF_INET ,"127.0.0.1", &serveraddr.sin_addr) <= 0) {
                 error_msg = "inet_aton error";
                 goto error;
             }
