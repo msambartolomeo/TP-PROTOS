@@ -1,4 +1,6 @@
+#define _GNU_SOURCE
 #include "networkHandler.h"
+
 
 #define DEFAULT_CLIENT_PORT 1080
 #define DEFAULT_SERVER_PORT 80
@@ -82,6 +84,14 @@ void serverSocketReadHandler(struct selector_key *key)
 
 void serverSocketWriteHandler(struct selector_key *key)
 {
+    int error = 0;
+    getsockopt(serverSocket, SOL_SOCKET, SO_ERROR, &error, &(socklen_t){sizeof(int)});
+    if(error) {
+        perror("SERVER CONNECTION ERROR");
+        closeConnection();
+        return;
+    }
+
     if(!buffer_can_read(&serverSendBuf)){
         serverInterests &= ~OP_WRITE;
         selector_set_interest(selector, serverSocket, serverInterests);
@@ -181,14 +191,14 @@ void passiveSocketHandler(struct selector_key *key)
         closeConnection();
     }
 
-    clientSocket = accept(fd, NULL, NULL); // TODO: chequear error
+    clientSocket = accept4(fd, NULL, NULL, SOCK_NONBLOCK);
     if (clientSocket == -1)
     {
         perror("Couldn't connect to client");
         return;
     }
 
-    serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    serverSocket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
     if (!serverSocket)
     {
         perror("unable to create socket");
@@ -207,12 +217,13 @@ void passiveSocketHandler(struct selector_key *key)
         return;
     }
 
-    // TODO: CONNECT NO BLOQUEANTE
     if (connect(serverSocket, (struct sockaddr *)&serveraddr, sizeof(struct sockaddr_in)) < 0)
     {
-        perror("SERVER CONNECTION ERROR");
-        closeConnection();
-        return;
+        if(errno != EINPROGRESS) {
+            perror("SERVER CONNECTION ERROR");
+            closeConnection();
+            return;
+        }
     }
 
     serverInterests = clientInterests = OP_READ;
