@@ -19,9 +19,12 @@ runserver: $(SERVER)
 runclient: $(CLIENT)
 	@./$(CLIENT)
 
+format:
+	@find . -regex '.*\.\(c\|h\)' -exec clang-format -style=file -i {} \;
+
 clean:
 	@rm -Rf build
 	@cd server; $(MAKE) clean
 	@cd client; $(MAKE) clean
 	
-.PHONY: clean server client
+.PHONY: format clean server client
