@@ -116,8 +116,8 @@ static void server_socket_write_handler(struct selector_key *key)
     else
     {
         buffer_read_adv(&conn->server_buf, len);
-        conn->client_interests |= OP_READ;
-        selector_set_interest(selector, conn->client_socket, conn->client_interests);
+        conn->server_interests |= OP_READ;
+        selector_set_interest(selector, conn->server_socket, conn->server_interests);
     }
 }
 
@@ -180,7 +180,7 @@ static void client_socket_write_handler(struct selector_key *key)
     else
     {
         buffer_read_adv(&conn->client_buf, len);
-        conn->server_interests |= OP_READ;
+        conn->server_interests |= OP_WRITE;
         selector_set_interest(selector, conn->server_socket, conn->server_interests);
     }
 }
@@ -195,7 +195,6 @@ static void passive_socket_handler(struct selector_key *key)
     socks5_connection * conn = malloc(sizeof(struct socks5_connection));
     if (conn == NULL) {
         perror("malloc error");
-        //close_connection(conn);
         return;
     }
 
@@ -205,20 +204,16 @@ static void passive_socket_handler(struct selector_key *key)
     buffer_init(&conn->server_buf, BUFFER_DEFAULT_SIZE, conn->raw_buffer_b);
 
     conn->client_interests = OP_READ;
-    conn->server_interests = OP_READ;
+    conn->server_interests = OP_NOOP;
 
-    conn->server_socket = -1;
-    conn->client_socket = -1;
 
-    struct sockaddr_in client_addr;
-    conn->client_socket = accept(fd, (struct sockaddr*)&client_addr, &(socklen_t){sizeof(struct sockaddr_in)});
+    conn->client_socket = accept(fd, (struct sockaddr*)&conn->client_addr, &(socklen_t){sizeof(struct sockaddr_in)});
     if (conn->client_socket == -1)
     {
         perror("Couldn't connect to client");
         close_connection(conn);
         return;
     }
-    memcpy(&conn->client_addr, &client_addr, sizeof(struct sockaddr_in));
     selector_fd_set_nio(conn->client_socket);
 
     conn->server_socket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
@@ -249,8 +244,8 @@ static void passive_socket_handler(struct selector_key *key)
         }
     }
 
-    selector_register(selector, conn->server_socket, &selectorServerFdHandler, OP_READ, conn); // TODO: CHEQUEAR ERROR
-    selector_register(selector, conn->client_socket, &selectorClientFdHandler, OP_READ, conn); // TODO: CHEQUEAR ERROR
+    selector_register(selector, conn->server_socket, &selectorServerFdHandler, conn->server_interests, conn); // TODO: CHEQUEAR ERROR
+    selector_register(selector, conn->client_socket, &selectorClientFdHandler, conn->client_interests, conn); // TODO: CHEQUEAR ERROR
 
     printf("NEW CONNECTION\n");
 }
@@ -281,7 +276,7 @@ int network_handler()
         goto error;
     }
 
-    const int passiveSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    const int passiveSocket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
     if (!(passiveSocket))
     {
         error_msg = "unable to create socket";
