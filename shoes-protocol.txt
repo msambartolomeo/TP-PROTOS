@@ -1,0 +1,94 @@
+SHOES Protocol Version 1.0
+
+1 Introduction
+
+
+
+
+2 Authentication
+
+    Once the SHOES V1 server has started, and the client has selected the
+    Username/Password Authentication protocol, the Username/Password
+    subnegotiation begins.  This begins with the client producing a
+    Username/Password request:
+
+            +----+------+----------+------+----------+
+            |VER | ULEN |  UNAME   | PLEN |  PASSWD  |
+            +----+------+----------+------+----------+
+            | 1  |  1   | 1 to 255 |  1   | 1 to 255 |
+            +----+------+----------+------+----------+
+
+    The VER field contains the current version of the subnegotiation,
+    which is X'01'. The ULEN field contains the length of the UNAME field
+    that follows. The UNAME field contains the username as known to the
+    source operating system. The PLEN field contains the length of the
+    PASSWD field that follows. The PASSWD field contains the password
+    association with the given UNAME.
+
+    The server verifies the supplied UNAME and PASSWD, and sends the
+    following response:
+
+                         +----+--------+
+                         |VER | STATUS |
+                         +----+--------+
+                         | 1  |   1    |
+                         +----+--------+
+    A STATUS field of X'00' indicates success. If the server returns a
+    `failure' (STATUS value other than X'00') status, it MUST close the
+    connection.
+
+
+3 Requests
+
+    Once the autherization process has concluded, the client sends the
+    request details.
+
+    The SHOES request is formed as follows:
+
+            +------+-----+----------+
+            | FMLY | CMD |   DATA   |
+            +------+-----+----------+
+            |  1   |  1  | Variable |
+            +------+-----+----------+
+    Where:
+
+              o  FMLY   Family of the request.
+                 o  GET Requests X'01'
+                 o  PUT Requests X'02'
+              o  CMD    Identifies the command to be executed whithins
+              the family specified.
+              o  DATA   Contains the command specific data. Further details
+              can be found in the following sections.
+
+
+3.1 GET Requests
+
+        This type of requests are used to retrieve information from the
+        server. The information returned can be metrics that have been
+        collected from the server or information from the users that is
+        available.
+
+        GET Requests MUST NOT use the DATA field, it is not used and MUST
+        be empty.
+
+        The values currently defined for CMD in this family are:
+
+                  o  X'00' HISTORIC CONNECTIONS
+                  o  X'01' CONCURRENT CONNECTIONS
+                  o  X'02' BYTES TRANSFERED
+                  o  X'03' LIST USERS
+
+3.2 PUT Requests
+
+        This type of requests are used to send information to the server,
+        adding or modifying the information that is available.
+
+        All the following requests MUST use the DATA field, and how it is
+        used is dependent on the CMD value.
+
+        The values currently defined for CMD in this family are:
+
+                o X'00' ADD USER
+                o X'01' REMOVE USER
+                o X'02' MODIFY BUFFER SIZE
+                o X'03' MODIFY SERVER PORT
