@@ -3,10 +3,23 @@
 #include "connection.h"
 #include "socks5.h"
 
+static bool auth_required = true;
+
+void require_auth(bool required) {
+    auth_required = required;
+}
+
 void connection_parser_init(struct connectionParser *parser) {
     parser->remaining = 0;
     parser->state = CONECTION_VERSION;
     parser->selected_method = METHOD_NO_ACCEPTABLE_METHODS;
+}
+
+static enum connectionMethod choose_method(enum connectionMethod current, enum connectionMethod new) {
+    if (new == METHOD_USERNAME_PASSWORD || (!auth_required && (new == METHOD_NO_AUTHENTICATION_REQUIRED && current != METHOD_USERNAME_PASSWORD))) {
+        return new;
+    }
+    return current;
 }
 
 static void connection_parse_byte(struct connectionParser *parser, uint8_t byte) {
@@ -23,9 +36,7 @@ static void connection_parse_byte(struct connectionParser *parser, uint8_t byte)
             }
             break;
         case CONECTION_METHODS:
-            if (byte == METHOD_USERNAME_PASSWORD || (byte == METHOD_NO_AUTHENTICATION_REQUIRED && parser->selected_method != METHOD_USERNAME_PASSWORD)) {
-                parser->selected_method = byte;
-            }
+            parser->selected_method = choose_method(parser->selected_method, byte);
 
             parser->remaining--;
             if (parser->remaining == 0) {
