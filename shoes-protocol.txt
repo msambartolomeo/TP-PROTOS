@@ -2,6 +2,9 @@ SHOES Protocol Version 1.0
 
 1 Introduction
 
+    SHOES is a TCP-based protocol designed to obtain metrics from a server
+    and change it's configuration at runtime. The name is derived from
+    "Should Establish" a connection.
 
 
 
@@ -28,11 +31,11 @@ SHOES Protocol Version 1.0
     The server verifies the supplied UNAME and PASSWD, and sends the
     following response:
 
-                         +----+--------+
-                         |VER | STATUS |
-                         +----+--------+
-                         | 1  |   1    |
-                         +----+--------+
+                         +-----+--------+
+                         | VER | STATUS |
+                         +-----+--------+
+                         |  1  |   1    |
+                         +-----+--------+
     A STATUS field of X'00' indicates success. If the server returns a
     `failure' (STATUS value other than X'00') status, it MUST close the
     connection.
@@ -77,6 +80,7 @@ SHOES Protocol Version 1.0
                   o  X'01' CONCURRENT CONNECTIONS
                   o  X'02' BYTES TRANSFERED
                   o  X'03' LIST USERS
+                  o  X'04' LIST CREDENTIALS
 
 3.2 PUT Requests
 
@@ -92,3 +96,33 @@ SHOES Protocol Version 1.0
                 o X'01' REMOVE USER
                 o X'02' MODIFY BUFFER SIZE
                 o X'03' MODIFY SERVER PORT
+
+        The requets formats are as follows:
+
+        ADD USER
+            +------+-----+------+----------+------+----------+
+            | FMLY | CMD | ULEN |  USNAME  | PLEN |  PASSWD  |
+            +------+-----+------+----------+------+----------+
+            |  1   |  1  |  1   | 1 to 255 |  1   | 1 to 255 |
+            +------+-----+------+----------+------+----------+
+
+        REMOVE USER
+            +------+-----+------+----------+
+            | FMLY | CMD | ULEN |  USNAME  |
+            +------+-----+------+----------+
+            |  1   |  1  |  1   | 1 to 255 |
+            +------+-----+------+----------+
+
+        MODIFY BUFFER SIZE
+            +------+-----+---------+
+            | FMLY | CMD | BUFSIZE |
+            +------+-----+---------+
+            |  1   |  1  |    4    |
+            +------+-----+---------+
+
+        MODIFY SERVER PORT
+            +------+-----+------+
+            | FMLY | CMD | PORT |
+            +------+-----+------+
+            |  1   |  1  |  4   |
+            +------+-----+------+
