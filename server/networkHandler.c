@@ -25,7 +25,7 @@ static void networkSelectorSignalHandler()
     printf("SIGCHLD SIGNAL");
 }
 
-static void close_connection(socks5_connection * connection)
+void close_connection(socks5_connection * connection)
 {
     int client_socket = connection->client_socket;
     int server_socket = connection->server_socket;
@@ -41,26 +41,26 @@ static void close_connection(socks5_connection * connection)
         close(client_socket);
     }
 
-    buffer_reset(&connection->client_buf);
-    buffer_reset(&connection->server_buf);
+    buffer_reset(&connection->read_buffer);
+    buffer_reset(&connection->write_buffer);
 
     free(connection);
 
     printf("CONNECTION CLOSED\n");
 }
-
+// TODO check if buffers are correct
 static void server_socket_read_handler(struct selector_key *key)
 {
     socks5_connection * conn = (socks5_connection *)key->data;
 
-    if(!buffer_can_write(&conn->client_buf)){
+    if(!buffer_can_write(&conn->read_buffer)){
         conn->client_interests &= ~OP_READ; // Con máquina de estados esto seguramente lo borremos
         selector_set_interest(selector, conn->server_socket, conn->server_interests);
         return;
     }
 
     size_t wbytes;
-    uint8_t *bufptr = buffer_write_ptr(&conn->client_buf, &wbytes);
+    uint8_t *bufptr = buffer_write_ptr(&conn->read_buffer, &wbytes);
 
     ssize_t len = recv(conn->server_socket, bufptr, wbytes, MSG_DONTWAIT);
 
@@ -78,7 +78,7 @@ static void server_socket_read_handler(struct selector_key *key)
         write(STDOUT_FILENO, bufptr, len);
         printf("\n\n");
 
-        buffer_write_adv(&conn->client_buf, len);
+        buffer_write_adv(&conn->read_buffer, len);
 
         conn->client_interests |= OP_WRITE;
         selector_set_interest(selector, conn->client_socket, conn->client_interests);
@@ -97,14 +97,14 @@ static void server_socket_write_handler(struct selector_key *key)
         return;
     }
 
-    if(!buffer_can_read(&conn->server_buf)){
+    if(!buffer_can_read(&conn->write_buffer)){
         conn->server_interests &= ~OP_WRITE;
         selector_set_interest(selector, conn->server_socket, conn->server_interests);
         return;
     }
 
     size_t rbytes;
-    uint8_t *bufptr = buffer_read_ptr(&conn->server_buf, &rbytes);
+    uint8_t *bufptr = buffer_read_ptr(&conn->write_buffer, &rbytes);
 
     ssize_t len = send(conn->server_socket, bufptr, rbytes, MSG_DONTWAIT);
     if (len == -1)
@@ -117,7 +117,7 @@ static void server_socket_write_handler(struct selector_key *key)
     }
     else
     {
-        buffer_read_adv(&conn->server_buf, len);
+        buffer_read_adv(&conn->write_buffer, len);
         conn->server_interests |= OP_READ;
         selector_set_interest(selector, conn->server_socket, conn->server_interests);
     }
@@ -127,14 +127,14 @@ static void client_socket_read_handler(struct selector_key *key)
 {
     socks5_connection * conn = (socks5_connection *) key->data;
 
-    if(!buffer_can_write(&conn->server_buf)){
+    if(!buffer_can_write(&conn->write_buffer)){
         conn->client_interests &= ~OP_READ;
         selector_set_interest(selector, conn->client_socket, conn->client_interests);
         return;
     }
 
     size_t wbytes;
-    uint8_t *bufptr = buffer_write_ptr(&conn->server_buf, &wbytes);
+    uint8_t *bufptr = buffer_write_ptr(&conn->write_buffer, &wbytes);
 
     ssize_t len = recv(conn->client_socket, bufptr, wbytes, MSG_DONTWAIT);
 
@@ -150,7 +150,7 @@ static void client_socket_read_handler(struct selector_key *key)
         write(STDOUT_FILENO, bufptr, len);
         printf("\n\n");
 
-        buffer_write_adv(&conn->server_buf, len);
+        buffer_write_adv(&conn->write_buffer, len);
 
         conn->server_interests |= OP_WRITE;
         selector_set_interest(selector, conn->server_socket, conn->server_interests);
@@ -161,14 +161,14 @@ static void client_socket_write_handler(struct selector_key *key)
 {
     socks5_connection * conn = (socks5_connection *) key->data;
 
-    if(!buffer_can_read(&conn->client_buf)) {
+    if(!buffer_can_read(&conn->read_buffer)) {
         conn->client_interests &= ~OP_WRITE;
         selector_set_interest(selector, conn->client_socket, conn->client_interests);
         return;
     }
 
     size_t rbytes;
-    uint8_t *bufptr = buffer_read_ptr(&conn->client_buf, &rbytes);
+    uint8_t *bufptr = buffer_read_ptr(&conn->read_buffer, &rbytes);
 
     ssize_t len = send(conn->client_socket, bufptr, rbytes, MSG_DONTWAIT);
     if (len == -1)
@@ -181,7 +181,7 @@ static void client_socket_write_handler(struct selector_key *key)
     }
     else
     {
-        buffer_read_adv(&conn->client_buf, len);
+        buffer_read_adv(&conn->read_buffer, len);
         conn->server_interests |= OP_WRITE;
         selector_set_interest(selector, conn->server_socket, conn->server_interests);
     }
@@ -227,8 +227,8 @@ static const struct fd_handler connectionFdHandler = {
     .handle_close = connection_close,
 };
 
-static const struct fd_handler selectorClientFdHandler = {client_socket_read_handler, client_socket_write_handler, 0, 0};
-static const struct fd_handler selectorServerFdHandler = {server_socket_read_handler, server_socket_write_handler, 0, 0};
+__attribute__((unused)) static const struct fd_handler selectorClientFdHandler = {client_socket_read_handler, client_socket_write_handler, 0, 0};
+__attribute__((unused)) static const struct fd_handler selectorServerFdHandler = {server_socket_read_handler, server_socket_write_handler, 0, 0};
 
 static void passive_socket_handler(struct selector_key *key)
 {
@@ -242,8 +242,8 @@ static void passive_socket_handler(struct selector_key *key)
 
     // Inicializo el struct
     memset(conn, 0x00, sizeof(*conn));
-    buffer_init(&conn->client_buf, BUFFER_DEFAULT_SIZE, conn->raw_buffer_a);
-    buffer_init(&conn->server_buf, BUFFER_DEFAULT_SIZE, conn->raw_buffer_b);
+    buffer_init(&conn->read_buffer, BUFFER_DEFAULT_SIZE, conn->raw_buffer_a);
+    buffer_init(&conn->write_buffer, BUFFER_DEFAULT_SIZE, conn->raw_buffer_b);
 
     conn->stm.initial = CONNECTION_READ;
     conn->stm.max_state = CONNECTION_WRITE; // TODO: cambiar cuando vamos avanzando

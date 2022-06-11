@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "connection.h"
+#include "socks5.h"
 
 void connection_parser_init(struct connectionParser *parser) {
     parser->remaining = 0;

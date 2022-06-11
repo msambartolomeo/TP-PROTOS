@@ -5,8 +5,6 @@
 #include <stdbool.h>
 #include <netinet/in.h>
 
-static const uint8_t SOCKS_VERSION = 0x05;
-
 /*
  *  The SOCKS request is formed as follows:
  *

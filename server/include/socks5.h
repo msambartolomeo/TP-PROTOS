@@ -8,6 +8,7 @@
 #include "authentication.h"
 #include "request.h"
 
+static const uint8_t SOCKS_VERSION = 0x05;
 #define BUFFER_DEFAULT_SIZE 1024
 
 // Estados de la maquina de estados general
@@ -41,8 +42,8 @@ typedef struct socks5_connection {
     //Buffers
     uint8_t raw_buffer_a[BUFFER_DEFAULT_SIZE];
     uint8_t raw_buffer_b[BUFFER_DEFAULT_SIZE];
-    buffer client_buf;
-    buffer server_buf;
+    buffer read_buffer;
+    buffer write_buffer;
 
     struct state_machine stm;
 
