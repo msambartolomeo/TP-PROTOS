@@ -66,7 +66,6 @@ void parse_args(const int argc, char **argv, struct socks5args *args) {
     args->disectors_enabled = true;
 
     int c;
-    int nusers = 0;
 
     while (true) {
         c = getopt(argc, argv, "hl:L:Np:P:u:v");
@@ -93,12 +92,12 @@ void parse_args(const int argc, char **argv, struct socks5args *args) {
                 args->mng_port   = port(optarg);
                 break;
             case 'u':
-                if(nusers >= MAX_USERS) {
+                if(args->nusers >= MAX_USERS) {
                     fprintf(stderr, "maximun number of command line users reached: %d.\n", MAX_USERS);
                     exit(1);
                 } else {
-                    user(optarg, args->users + nusers);
-                    nusers++;
+                    user(optarg, args->users + args->nusers);
+                    args->nusers++;
                 }
                 break;
             case 'v':

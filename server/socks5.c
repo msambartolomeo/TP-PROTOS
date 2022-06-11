@@ -4,8 +4,7 @@
 #include "stm.h"
 #include "socks5.h"
 #include "selector.h"
-#include "networkHandler.h"
-#include <errno.h>
+#include "users.h"
 
 // CONNECTION_READ
 static void connection_read_init(unsigned state, struct selector_key *key) {
@@ -24,7 +23,7 @@ static unsigned connection_read(struct selector_key *key) {
     size_t count;
     uint8_t *bufptr = buffer_write_ptr(&conn->read_buffer, &count);
 
-    ssize_t len = recv(conn->client_socket, bufptr, count, MSG_DONTWAIT);
+    ssize_t len = recv(conn->client_socket, bufptr, count, MSG_NOSIGNAL); // TODO ver por que nosignal
 
     if (len <= 0) {
         return ERROR;
@@ -69,7 +68,14 @@ static unsigned connection_write(struct selector_key *key) {
     buffer_read_adv(&conn->write_buffer, len);
     if (!buffer_can_read(&conn->write_buffer)) {
         if (SELECTOR_SUCCESS == selector_set_interest_key(key, OP_READ)) {
-            return REQUEST_READ;
+            switch (conn->parser.connection.selected_method) {
+                case METHOD_NO_AUTHENTICATION_REQUIRED:
+                    return REQUEST_READ;
+                case METHOD_USERNAME_PASSWORD:
+                    return AUTHENTICATION_READ;
+                case METHOD_NO_ACCEPTABLE_METHODS:
+                    return DONE;
+            }
         }
         return ERROR;
     }
@@ -95,7 +101,7 @@ static unsigned authentication_read(struct selector_key *key) {
     size_t count;
     uint8_t *bufptr = buffer_write_ptr(&conn->read_buffer, &count);
 
-    ssize_t len = recv(conn->client_socket, bufptr, count, MSG_DONTWAIT);
+    ssize_t len = recv(conn->client_socket, bufptr, count, MSG_NOSIGNAL);
 
     if (len <= 0) {
         return ERROR;
@@ -115,12 +121,13 @@ static unsigned authentication_read(struct selector_key *key) {
 
     if (done) {
         conn->client_interests = OP_WRITE; // TODO ver si es necesario para algo
-        if (authenticate_user(parser->credentials) == -1) {
+        enum authenticationStatus status = authenticate_user(&parser->credentials);
+        if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE)
+            || generate_authentication_response(&conn->write_buffer, status) == -1) {
             return ERROR;
         }
         return AUTHENTICATION_WRITE;
     }
-
 
     return AUTHENTICATION_READ;
 }
@@ -128,7 +135,24 @@ static unsigned authentication_read(struct selector_key *key) {
 // AUTHENTICATION_WRITE
 
 static unsigned authentication_write(struct selector_key *key) {
+    socks5_connection * conn = (socks5_connection *)key->data;
 
+    size_t count;
+    uint8_t *bufptr = buffer_read_ptr(&conn->write_buffer, &count);
+
+    ssize_t len = send(conn->client_socket, bufptr, count, MSG_NOSIGNAL);
+    if (len == -1) {
+        return ERROR;
+    }
+    buffer_read_adv(&conn->write_buffer, len);
+    if (!buffer_can_read(&conn->write_buffer)) {
+        if (SELECTOR_SUCCESS == selector_set_interest_key(key, OP_READ)) {
+            return REQUEST_READ;
+        }
+        return ERROR;
+    }
+
+    return AUTHENTICATION_WRITE;
 }
 
 static const struct state_definition states[] = {
@@ -146,6 +170,16 @@ static const struct state_definition states[] = {
     }, {
         .state = AUTHENTICATION_WRITE,
         .on_write_ready = authentication_write,
+    }, {
+        .state = REQUEST_READ,
+    }, {
+        .state = REQUEST_RESOLV,
+    }, {
+        .state = REQUEST_CONNECT,
+    }, {
+        .state = REQUEST_WRITE,
+    }, {
+        .state = COPY,
     }, {
         .state = ERROR,
     }, {

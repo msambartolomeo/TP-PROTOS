@@ -2,6 +2,7 @@
 #define ARGS_H_kFlmYm1tW9p5npzDr2opQJ9jM8
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #define MAX_USERS 10
 
@@ -18,7 +19,8 @@ struct socks5args {
     unsigned short  mng_port;
 
     bool            disectors_enabled;
-    
+
+    uint8_t         nusers;
     struct users    users[MAX_USERS];
 };
 

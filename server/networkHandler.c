@@ -246,7 +246,7 @@ static void passive_socket_handler(struct selector_key *key)
     buffer_init(&conn->write_buffer, BUFFER_DEFAULT_SIZE, conn->raw_buffer_b);
 
     conn->stm.initial = CONNECTION_READ;
-    conn->stm.max_state = CONNECTION_WRITE; // TODO: cambiar cuando vamos avanzando
+    conn->stm.max_state = DONE;
     conn->stm.states = get_socks5_states();
 
     stm_init(&conn->stm);
