@@ -3,7 +3,7 @@
 #include "connection.h"
 #include "socks5.h"
 
-static bool auth_required = true;
+static bool auth_required = false;
 
 void require_auth(bool required) {
     auth_required = required;
