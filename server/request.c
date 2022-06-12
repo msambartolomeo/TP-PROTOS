@@ -130,14 +130,15 @@ static uint8_t *get_address_pointer_and_length(socksResponse *response, size_t *
     return NULL;
 }
 
-size_t generate_response(buffer *buf, socksResponse *response) {
+int generate_response(buffer *buf, socksResponse *response) {
     size_t n;
     uint8_t *buf_ptr = buffer_write_ptr(buf, &n);
 
     size_t length;
     uint8_t *pointer = get_address_pointer_and_length(response, &length);
+    int domain = response->address_type == ADDRESS_TYPE_DOMAINNAME;
 
-    if (n < length + 6 || pointer == NULL) {
+    if (n < length + 6 + domain || pointer == NULL) {
         return -1;
     }
 
@@ -145,14 +146,17 @@ size_t generate_response(buffer *buf, socksResponse *response) {
     *buf_ptr++ = response->status;
     *buf_ptr++ = 0x00;
     *buf_ptr++ = response->address_type;
+    if (domain) {
+        *buf_ptr++ = length;
+    }
     strncpy((char *) buf_ptr, (char *) pointer, length);
     buf_ptr += length;
     uint8_t *port_ptr = (uint8_t *) &(response->port);
     *buf_ptr++ = port_ptr[0];
     *buf_ptr++ = port_ptr[1];
 
-    buffer_write_adv(buf, (ssize_t) length + 6);
-    return length + 6;
+    buffer_write_adv(buf, (ssize_t) length + domain + 6);
+    return (int) length + 6 + domain;
 }
 
 const char * request_error(enum requestState state) {

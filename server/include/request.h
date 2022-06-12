@@ -89,13 +89,6 @@ typedef struct socksRequest {
     in_port_t port;
 } socksRequest;
 
-struct requestParser {
-    socksRequest request;
-    enum requestState state;
-    uint8_t remaining;
-    uint8_t *pointer;
-};
-
 enum socksResponseStatus {
     STATUS_SUCCEDED = 0x00,
     STATUS_GENERAL_SERVER_FAILURE = 0x01,
@@ -149,11 +142,19 @@ typedef struct SocksResponse {
     in_port_t port;
 } socksResponse;
 
+struct requestParser {
+    socksRequest request;
+    socksResponse response;
+    enum requestState state;
+    uint8_t remaining;
+    uint8_t *pointer;
+};
+
 void request_parser_init(struct requestParser *parser);
 
 enum requestState request_parse(struct requestParser *parser, buffer *buf, bool *error);
 
-size_t generate_response(buffer *buf, socksResponse *response);
+int generate_response(buffer *buf, socksResponse *response);
 
 const char * request_error(enum requestState state);
 
