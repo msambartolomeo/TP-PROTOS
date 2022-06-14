@@ -33,11 +33,12 @@ typedef struct socks5_connection {
     int client_socket;
     int client_interests; // Si tenemos máquina de estados no hace falta
 
-    // Datos del servidor
-    struct sockaddr_storage server_addr;
-    socklen_t server_addr_len;
-    int server_socket;
-    int server_interests;
+    // Datos del origin
+    struct sockaddr_storage origin_addr;
+    socklen_t origin_addr_len;
+    int origin_socket;
+    int origin_domain;
+    int origin_interests;
 
     //Buffers
     uint8_t raw_buffer_a[BUFFER_DEFAULT_SIZE];
@@ -52,6 +53,8 @@ typedef struct socks5_connection {
         struct authenticationParser authentication;
         struct requestParser request;
     } parser;
+
+    int references;
 
     // TODO: Parsers?
     // En la implementación de Coda también tiene ClientAddr, ServerAddr, resolución de nombre de origen, estados

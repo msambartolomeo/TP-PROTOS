@@ -1,10 +1,14 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <string.h>
 #include "stm.h"
 #include "socks5.h"
 #include "selector.h"
 #include "users.h"
+#include "networkHandler.h"
 
 // CONNECTION_READ
 static void connection_read_init(unsigned state, struct selector_key *key) {
@@ -153,6 +157,42 @@ static unsigned authentication_write(struct selector_key *key) {
     return AUTHENTICATION_WRITE;
 }
 
+// request auxiliar functions
+
+static unsigned init_connection(struct requestParser *parser, socks5_connection *conn, struct selector_key *key) {
+    conn->origin_socket = socket(conn->origin_domain, SOCK_STREAM | SOCK_NONBLOCK, 0);
+    if (conn->origin_socket == -1) {
+        return ERROR;
+    }
+
+    if (connect(conn->origin_socket, (struct sockaddr *)&conn->origin_addr, conn->origin_addr_len) < 0) {
+        if(errno == EINPROGRESS) {
+            // key es la del cliente
+            if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_NOOP)) {
+                return ERROR;
+            }
+            if (SELECTOR_SUCCESS != selector_register(key->s, conn->origin_socket, get_connection_fd_handler(), OP_WRITE, conn)) {
+                return ERROR;
+            }
+            return REQUEST_CONNECT;
+        }
+        return ERROR;
+    }
+    return ERROR; // TODO: ?
+}
+
+static unsigned setup_response_error(struct requestParser *parser, enum socksResponseStatus status, socks5_connection *conn, struct selector_key *key) {
+    parser->response.status = status;
+    parser->response.address_type = parser->request.address_type;
+    parser->response.port = parser->request.port;
+    parser->response.address = parser->request.destination;
+
+    if (SELECTOR_SUCCESS != selector_set_interest(key->s, conn->client_socket, OP_WRITE) || generate_response(&conn->write_buffer, &parser->response) == -1) {
+        return ERROR;
+    }
+    return REQUEST_WRITE;
+}
+
 // REQUEST_READ
 
 static void request_read_init(unsigned state, struct selector_key *key) {
@@ -192,18 +232,27 @@ static unsigned request_read(struct selector_key *key) {
     if (done) {
         switch (parser->request.command) {
             case COMMAND_CONNECT:
-                // TODO: implement
+                switch (parser->request.address_type) {
+                    case ADDRESS_TYPE_IPV4:
+                        conn->origin_domain = AF_INET;
+                        parser->request.destination.ipv4.sin_port = parser->request.port;
+                        conn->origin_addr_len = sizeof(parser->request.destination.ipv4);
+                        memcpy(&conn->origin_addr, &parser->request.destination, sizeof(parser->request.destination.ipv4));
+                        return init_connection(parser, conn, key);
+                    case ADDRESS_TYPE_IPV6:
+                        conn->origin_domain = AF_INET6;
+                        parser->request.destination.ipv6.sin6_port = parser->request.port;
+                        conn->origin_addr_len = sizeof(parser->request.destination.ipv6);
+                        memcpy(&conn->origin_addr, &parser->request.destination, sizeof(parser->request.destination.ipv6));
+                        return init_connection(parser, conn, key);
+                    case ADDRESS_TYPE_DOMAINNAME:
+                        return REQUEST_RESOLV;
+                    default:
+                        return ERROR;
+                }
             case COMMAND_BIND:
             case COMMAND_UDP_ASSOCIATE:
-                parser->response.status = STATUS_COMMAND_NOT_SUPPORTED;
-                parser->response.address_type = parser->request.address_type;
-                parser->response.port = parser->request.port;
-                parser->response.address = parser->request.destination;
-                if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE)
-                    || generate_response(&conn->write_buffer, &parser->response) == -1) {
-                    return ERROR;
-                }
-                return REQUEST_WRITE;
+                return setup_response_error(parser, STATUS_COMMAND_NOT_SUPPORTED, conn, key);
         }
     }
 
@@ -237,6 +286,41 @@ static unsigned request_write(struct selector_key *key) {
     return AUTHENTICATION_WRITE;
 }
 
+// REQUEST_CONNECT
+
+static unsigned request_connect(struct selector_key *key) {
+    socks5_connection * conn = (socks5_connection *)key->data;
+    struct requestParser * parser = &conn->parser.request;
+
+    int error = 0;
+    if (getsockopt(conn->origin_socket, SOL_SOCKET, SO_ERROR, &error, &(socklen_t){sizeof(int)})) {
+        return setup_response_error(parser, STATUS_GENERAL_SERVER_FAILURE, conn, key);
+    }
+    if(error) {
+        return ERROR;
+    }
+
+    parser->response.status = STATUS_SUCCEDED;
+    parser->response.port = parser->request.port;
+    switch (conn->origin_domain) {
+        case AF_INET:
+            parser->response.address_type = ADDRESS_TYPE_IPV4;
+            memcpy(&parser->response.address, &conn->origin_addr, sizeof(parser->response.address.ipv4));
+            break;
+        case AF_INET6:
+            parser->response.address_type = ADDRESS_TYPE_IPV6;
+            memcpy(&parser->response.address, &conn->origin_addr, sizeof(parser->response.address.ipv6));
+            break;
+        default:
+            return setup_response_error(parser, STATUS_GENERAL_SERVER_FAILURE, conn, key);
+    }
+
+    if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_NOOP) || SELECTOR_SUCCESS != selector_set_interest(key->s, conn->client_socket, OP_WRITE) || generate_response(&conn->write_buffer, &parser->response) == -1) {
+        return ERROR;
+    }
+    return REQUEST_WRITE;
+}
+
 static const struct state_definition states[] = {
     {
         .state = CONNECTION_READ,
@@ -260,6 +344,7 @@ static const struct state_definition states[] = {
         .state = REQUEST_RESOLV,
     }, {
         .state = REQUEST_CONNECT,
+        .on_write_ready = request_connect,
     }, {
         .state = REQUEST_WRITE,
         .on_write_ready = request_write,
