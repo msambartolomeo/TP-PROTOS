@@ -192,7 +192,6 @@ static unsigned init_connection(struct requestParser *parser, socks5_connection 
             if (SELECTOR_SUCCESS != selector_register(key->s, conn->origin_socket, get_connection_fd_handler(), OP_WRITE, conn)) {
                 return ERROR;
             }
-            conn->references++;
             return REQUEST_CONNECT;
         }
         return ERROR;
@@ -339,7 +338,7 @@ static unsigned request_write(struct selector_key *key) {
         if (parser->response.status != STATUS_SUCCEDED) {
             return DONE;
         }
-        if (SELECTOR_SUCCESS == selector_set_interest_key(key, OP_READ)) {
+        if (SELECTOR_SUCCESS == selector_set_interest_key(key, OP_READ) && SELECTOR_SUCCESS == selector_set_interest(key->s, conn->origin_socket, OP_READ)) {
             return COPY;
         }
         return ERROR;
@@ -358,6 +357,7 @@ static unsigned request_resolv(struct selector_key *key) {
         if (conn->resolved_addr != NULL) {
             freeaddrinfo(conn->resolved_addr);
             conn->resolved_addr = NULL;
+            conn->resolved_addr_current = NULL;
         }
         return setup_response_error(parser, STATUS_GENERAL_SERVER_FAILURE, conn, key);
     }
@@ -387,7 +387,6 @@ static unsigned request_connect(struct selector_key *key) {
         if (parser->request.address_type == ADDRESS_TYPE_DOMAINNAME) {
             selector_unregister_fd(key->s, conn->origin_socket);
             close(conn->origin_socket);
-            conn->references--;
             return request_resolv(key);
         }
         return setup_response_error(parser, connect_error_to_socks(error), conn, key);
@@ -416,6 +415,104 @@ static unsigned request_connect(struct selector_key *key) {
         return ERROR;
     }
     return REQUEST_WRITE;
+}
+
+// COPY
+
+static void copy_init(unsigned state, struct selector_key *key) {
+    socks5_connection * conn = (socks5_connection *)key->data;
+    struct Copy *c = &conn->client_copy;
+
+    c->fd = conn->client_socket;
+    c->rb = &conn->read_buffer;
+    c->wb = &conn->write_buffer;
+    c->interests = OP_READ;
+    c->other = &conn->origin_copy;
+
+    c = &conn->origin_copy;
+
+    c->fd = conn->origin_socket;
+    c->rb = &conn->write_buffer;
+    c->wb = &conn->read_buffer;
+    c->interests = OP_READ;
+    c->other = &conn->client_copy;
+}
+
+static unsigned copy_read(struct selector_key *key) {
+    socks5_connection * conn = (socks5_connection *)key->data;
+    struct Copy *c;
+    if (key->fd == conn->client_socket) {
+        c = &conn->client_copy;
+    } else if (key->fd == conn->origin_socket) {
+        c = &conn->origin_copy;
+    } else {
+        return ERROR;
+    }
+
+    if(!buffer_can_write(c->wb)){
+        c->interests &= ~OP_READ;
+        selector_set_interest(key->s, key->fd, c->interests);
+        return COPY;
+    }
+
+    size_t wbytes;
+    uint8_t *bufptr = buffer_write_ptr(c->wb, &wbytes);
+
+    ssize_t len = recv(key->fd, bufptr, wbytes, MSG_NOSIGNAL);
+    if (len <= 0)
+    {
+        //TODO: ver que onda
+        if (len == -1 && errno != EWOULDBLOCK) {
+            perror("SERVER READ ERROR");
+            return ERROR;
+        }
+
+        return DONE;
+    }
+    buffer_write_adv(c->wb, len);
+
+    c->other->interests |= OP_WRITE;
+    selector_set_interest(key->s, c->other->fd, c->other->interests);
+
+    return COPY;
+}
+
+static unsigned copy_write(struct selector_key *key) {
+    socks5_connection * conn = (socks5_connection *)key->data;
+    struct Copy *c;
+    if (key->fd == conn->client_socket) {
+        c = &conn->client_copy;
+    } else if (key->fd == conn->origin_socket) {
+        c = &conn->origin_copy;
+    } else {
+        return ERROR;
+    }
+
+    size_t rbytes;
+    uint8_t *bufptr = buffer_read_ptr(c->rb, &rbytes);
+
+    ssize_t len = send(key->fd, bufptr, rbytes, MSG_DONTWAIT);
+    if (len == -1)
+    {
+        if (errno != EWOULDBLOCK)
+        {
+            perror("SERVER WRITE FAILED");
+            return ERROR;
+        }
+        return COPY;
+    }
+
+    buffer_read_adv(c->rb, len);
+
+    c->other->interests |= OP_READ;
+    selector_set_interest(key->s, c->other->fd, c->other->interests);
+
+    if(!buffer_can_read(c->rb)){
+        c->interests &= ~OP_WRITE;
+        selector_set_interest(key->s, c->fd, c->interests);
+    }
+
+    return COPY;
 }
 
 static const struct state_definition states[] = {
@@ -448,6 +545,9 @@ static const struct state_definition states[] = {
         .on_write_ready = request_write,
     }, {
         .state = COPY,
+        .on_arrival = copy_init,
+        .on_read_ready = copy_read,
+        .on_write_ready = copy_write,
     }, {
         .state = ERROR,
     }, {

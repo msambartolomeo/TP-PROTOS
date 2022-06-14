@@ -8,6 +8,7 @@
 #include "connection.h"
 #include "authentication.h"
 #include "request.h"
+#include "selector.h"
 
 static const uint8_t SOCKS_VERSION = 0x05;
 #define BUFFER_DEFAULT_SIZE 1024
@@ -25,6 +26,13 @@ enum socks5_state {
     COPY,
     ERROR,
     DONE,
+};
+
+struct Copy {
+    int fd;
+    buffer *rb, *wb;
+    fd_interest interests;
+    struct Copy *other;
 };
 
 typedef struct socks5_connection {
@@ -59,7 +67,9 @@ typedef struct socks5_connection {
         struct requestParser request;
     } parser;
 
-    int references;
+    // estructuras para usar en el estado de copy
+    struct Copy client_copy;
+    struct Copy origin_copy;
 
     // TODO: Parsers?
     // En la implementación de Coda también tiene ClientAddr, ServerAddr, resolución de nombre de origen, estados
