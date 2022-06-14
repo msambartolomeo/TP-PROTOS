@@ -11,6 +11,8 @@
 
 #include "networkHandler.h"
 #include "selector.h"
+#include "stm.h"
+#include "socks5.h"
 
 #define DEFAULT_CLIENT_PORT 1080
 #define DEFAULT_SERVER_PORT 80
@@ -23,10 +25,10 @@ static void networkSelectorSignalHandler()
     printf("SIGCHLD SIGNAL");
 }
 
-static void close_connection(socks5_connection * connection)
+void close_connection(socks5_connection * connection)
 {
     int client_socket = connection->client_socket;
-    int server_socket = connection->server_socket;
+    int server_socket = connection->origin_socket;
 
     if (server_socket != -1)
     {
@@ -39,154 +41,57 @@ static void close_connection(socks5_connection * connection)
         close(client_socket);
     }
 
-    buffer_reset(&connection->client_buf);
-    buffer_reset(&connection->server_buf);
+    buffer_reset(&connection->read_buffer);
+    buffer_reset(&connection->write_buffer);
 
     free(connection);
 
     printf("CONNECTION CLOSED\n");
 }
 
-static void server_socket_read_handler(struct selector_key *key)
-{
-    socks5_connection * conn = (socks5_connection *)key->data;
+// Hand connections to the state machine
+static void connection_read(struct selector_key *key) {
+    socks5_connection *conn = (socks5_connection *) key->data;
+    const enum socks5_state state = stm_handler_read(&conn->stm, key);
 
-    if(!buffer_can_write(&conn->client_buf)){
-        conn->client_interests &= ~OP_READ; // Con máquina de estados esto seguramente lo borremos
-        selector_set_interest(selector, conn->server_socket, conn->server_interests);
-        return;
-    }
-
-    size_t wbytes;
-    uint8_t *bufptr = buffer_write_ptr(&conn->client_buf, &wbytes);
-
-    ssize_t len = recv(conn->server_socket, bufptr, wbytes, MSG_DONTWAIT);
-
-    if (len <= 0)
-    {
-        if (len == -1 && errno != EWOULDBLOCK)
-            perror("SERVER READ ERROR");
-
-        close_connection(conn);
-
-        return;
-    }
-    else
-    {
-        write(STDOUT_FILENO, bufptr, len);
-        printf("\n\n");
-
-        buffer_write_adv(&conn->client_buf, len);
-
-        conn->client_interests |= OP_WRITE;
-        selector_set_interest(selector, conn->client_socket, conn->client_interests);
-    }
-}
-
-static void server_socket_write_handler(struct selector_key *key)
-{
-    socks5_connection * conn = (socks5_connection *)key->data;
-
-    int error = 0;
-    getsockopt(conn->server_socket, SOL_SOCKET, SO_ERROR, &error, &(socklen_t){sizeof(int)});
-    if(error) {
-        perror("SERVER CONNECTION ERROR");
-        close_connection(conn);
-        return;
-    }
-
-    if(!buffer_can_read(&conn->server_buf)){
-        conn->server_interests &= ~OP_WRITE;
-        selector_set_interest(selector, conn->server_socket, conn->server_interests);
-        return;
-    }
-
-    size_t rbytes;
-    uint8_t *bufptr = buffer_read_ptr(&conn->server_buf, &rbytes);
-
-    ssize_t len = send(conn->server_socket, bufptr, rbytes, MSG_DONTWAIT);
-    if (len == -1)
-    {
-        if (errno != EWOULDBLOCK)
-        {
-            perror("SERVER WRITE FAILED");
-            exit(1);
-        }
-    }
-    else
-    {
-        buffer_read_adv(&conn->server_buf, len);
-        conn->server_interests |= OP_READ;
-        selector_set_interest(selector, conn->server_socket, conn->server_interests);
-    }
-}
-
-static void client_socket_read_handler(struct selector_key *key)
-{
-    socks5_connection * conn = (socks5_connection *) key->data;
-
-    if(!buffer_can_write(&conn->server_buf)){
-        conn->client_interests &= ~OP_READ;
-        selector_set_interest(selector, conn->client_socket, conn->client_interests);
-        return;
-    }
-
-    size_t wbytes;
-    uint8_t *bufptr = buffer_write_ptr(&conn->server_buf, &wbytes);
-
-    ssize_t len = recv(conn->client_socket, bufptr, wbytes, MSG_DONTWAIT);
-
-    if (len <= 0)
-    {
-        if (len == -1) {
-            perror("CLIENT READ ERROR");
-        }
+    if (state == ERROR || state == DONE) {
         close_connection(conn);
     }
-    else
-    {
-        write(STDOUT_FILENO, bufptr, len);
-        printf("\n\n");
+}
 
-        buffer_write_adv(&conn->server_buf, len);
+static void connection_write(struct selector_key *key) {
+    socks5_connection *conn = (socks5_connection *) key->data;
+    const enum socks5_state state = stm_handler_write(&conn->stm, key);
 
-        conn->server_interests |= OP_WRITE;
-        selector_set_interest(selector, conn->server_socket, conn->server_interests);
+    if (state == ERROR || state == DONE) {
+        close_connection(conn);
     }
 }
 
-static void client_socket_write_handler(struct selector_key *key)
-{
-    socks5_connection * conn = (socks5_connection *) key->data;
+static void connection_block(struct selector_key *key) {
+    socks5_connection *conn = (socks5_connection *) key->data;
+    const enum socks5_state state = stm_handler_block(&conn->stm, key);
 
-    if(!buffer_can_read(&conn->client_buf)) {
-        conn->client_interests &= ~OP_WRITE;
-        selector_set_interest(selector, conn->client_socket, conn->client_interests);
-        return;
-    }
-
-    size_t rbytes;
-    uint8_t *bufptr = buffer_read_ptr(&conn->client_buf, &rbytes);
-
-    ssize_t len = send(conn->client_socket, bufptr, rbytes, MSG_DONTWAIT);
-    if (len == -1)
-    {
-        if (errno != EWOULDBLOCK)
-        {
-            perror("SERVER WRITE FAILED");
-            close_connection(conn);
-        }
-    }
-    else
-    {
-        buffer_read_adv(&conn->client_buf, len);
-        conn->server_interests |= OP_WRITE;
-        selector_set_interest(selector, conn->server_socket, conn->server_interests);
+    if (state == ERROR || state == DONE) {
+        close_connection(conn);
     }
 }
 
-static const struct fd_handler selectorClientFdHandler = {client_socket_read_handler, client_socket_write_handler, 0, 0};
-static const struct fd_handler selectorServerFdHandler = {server_socket_read_handler, server_socket_write_handler, 0, 0};
+static void connection_close(struct selector_key *key) {
+    socks5_connection *conn = (socks5_connection *) key->data;
+    stm_handler_close(&conn->stm, key);
+}
+
+static const struct fd_handler connectionFdHandler = {
+    .handle_read = connection_read,
+    .handle_write = connection_write,
+    .handle_block = connection_block,
+    .handle_close = connection_close,
+};
+
+const struct fd_handler *get_connection_fd_handler() {
+    return &connectionFdHandler;
+}
 
 static void passive_socket_handler(struct selector_key *key)
 {
@@ -200,12 +105,17 @@ static void passive_socket_handler(struct selector_key *key)
 
     // Inicializo el struct
     memset(conn, 0x00, sizeof(*conn));
-    buffer_init(&conn->client_buf, BUFFER_DEFAULT_SIZE, conn->raw_buffer_a);
-    buffer_init(&conn->server_buf, BUFFER_DEFAULT_SIZE, conn->raw_buffer_b);
+    buffer_init(&conn->read_buffer, BUFFER_DEFAULT_SIZE, conn->raw_buffer_a);
+    buffer_init(&conn->write_buffer, BUFFER_DEFAULT_SIZE, conn->raw_buffer_b);
+
+    conn->stm.initial = CONNECTION_READ;
+    conn->stm.max_state = DONE;
+    conn->stm.states = get_socks5_states();
+
+    stm_init(&conn->stm);
 
     conn->client_interests = OP_READ;
-    conn->server_interests = OP_NOOP;
-
+    conn->origin_interests = OP_NOOP;
 
     conn->client_socket = accept(fd, (struct sockaddr*)&conn->client_addr, &(socklen_t){sizeof(struct sockaddr_in)});
     if (conn->client_socket == -1)
@@ -216,36 +126,11 @@ static void passive_socket_handler(struct selector_key *key)
     }
     selector_fd_set_nio(conn->client_socket);
 
-    conn->server_socket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
-    if (conn->server_socket == -1)
-    {
-        perror("unable to create socket");
+    if (selector_register(selector, conn->client_socket, &connectionFdHandler, OP_READ, conn)) {
+        perror("selector_register error");
         close_connection(conn);
         return;
     }
-
-    struct sockaddr_in serveraddr = {0};
-    serveraddr.sin_family = AF_INET;
-    serveraddr.sin_port = htons(DEFAULT_SERVER_PORT);
-
-    if (inet_pton(AF_INET, "127.0.0.1", &serveraddr.sin_addr) <= 0)
-    {
-        perror("inet_aton error");
-        close_connection(conn);
-        return;
-    }
-
-    if (connect(conn->server_socket, (struct sockaddr *)&serveraddr, sizeof(struct sockaddr_in)) < 0)
-    {
-        if(errno != EINPROGRESS) {
-            perror("SERVER CONNECTION ERROR");
-            close_connection(conn);
-            return;
-        }
-    }
-
-    selector_register(selector, conn->server_socket, &selectorServerFdHandler, conn->server_interests, conn); // TODO: CHEQUEAR ERROR
-    selector_register(selector, conn->client_socket, &selectorClientFdHandler, conn->client_interests, conn); // TODO: CHEQUEAR ERROR
 
     printf("NEW CONNECTION\n");
 }
@@ -314,7 +199,6 @@ int network_handler()
             fprintf(stderr, "Selector Select Error: %s", selector_error(selectorStatus));
             exit(1);
         }
-        fflush(stdout);
     }
 
 error:

@@ -4,8 +4,6 @@
 #include "buffer.h"
 #include <stdbool.h>
 
-static const uint8_t SOCKS_VERSION = 0x05;
-
 enum connectionMethod {
     METHOD_NO_AUTHENTICATION_REQUIRED = 0x00,
     METHOD_USERNAME_PASSWORD = 0x02,

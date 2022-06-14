@@ -53,6 +53,11 @@ void authentication_parser_init(struct authenticationParser *parser);
 
 enum authenticationState authentication_parse(struct authenticationParser *parser, buffer *buf, bool *error);
 
+enum authenticationStatus {
+    AUTHENTICATION_STATUS_OK = 0,
+    AUTHENTICATION_STATUS_FAILED = 1,
+};
+
 /*
  *  The server verifies the supplied UNAME and PASSWD, and sends the
  *  following response:

@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include "args.h"
+#include "users.h"
 
 static void
 sigterm_handler(const int signal) {
@@ -26,6 +28,12 @@ sigterm_handler(const int signal) {
 int main(int argc, const char **argv) {
     signal(SIGTERM, sigterm_handler);
     signal(SIGINT, sigterm_handler);
+
+    // TODO: remove when args are added
+    struct users users[MAX_USERS] = {
+        {"pepe", "pepe"}
+    };
+    initialize_users(users, 1);
 
     int retcode = network_handler();
     network_handler_cleanup();
