@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <stdint.h>
+#include <netdb.h>
 #include "buffer.h"
 #include "stm.h"
 #include "connection.h"
@@ -39,6 +40,10 @@ typedef struct socks5_connection {
     int origin_socket;
     int origin_domain;
     int origin_interests;
+
+   // Para resolucion de nombres
+   struct addrinfo *resolved_addr;
+   struct addrinfo *resolved_addr_current;
 
     //Buffers
     uint8_t raw_buffer_a[BUFFER_DEFAULT_SIZE];

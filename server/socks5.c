@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
+#include <pthread.h>
 #include "stm.h"
 #include "socks5.h"
 #include "selector.h"
@@ -174,6 +175,7 @@ static unsigned init_connection(struct requestParser *parser, socks5_connection 
             if (SELECTOR_SUCCESS != selector_register(key->s, conn->origin_socket, get_connection_fd_handler(), OP_WRITE, conn)) {
                 return ERROR;
             }
+            conn->references++;
             return REQUEST_CONNECT;
         }
         return ERROR;
@@ -191,6 +193,35 @@ static unsigned setup_response_error(struct requestParser *parser, enum socksRes
         return ERROR;
     }
     return REQUEST_WRITE;
+}
+
+static void* request_resolv_thread(void * arg) {
+    struct selector_key *key = (struct selector_key *) arg;
+    socks5_connection * conn = (socks5_connection *)key->data;
+
+    pthread_detach(pthread_self());
+    struct addrinfo res = {
+        .ai_family = AF_UNSPEC,
+        .ai_socktype = SOCK_STREAM,
+        .ai_flags = AI_PASSIVE,
+        .ai_protocol = 0,
+        .ai_canonname = NULL,
+        .ai_addr = NULL,
+        .ai_next = NULL
+    };
+    char buf[7];
+    snprintf(buf, sizeof buf, "%d", ntohs(conn->parser.request.request.port));
+
+    // TODO: handle error
+    getaddrinfo((char *) conn->parser.request.request.destination.fqdn, buf, &res, &conn->resolved_addr);
+
+    conn->resolved_addr_current = conn->resolved_addr;
+
+    selector_notify_block(key->s, key->fd);
+
+    free(arg);
+
+    return 0;
 }
 
 // REQUEST_READ
@@ -245,8 +276,22 @@ static unsigned request_read(struct selector_key *key) {
                         conn->origin_addr_len = sizeof(parser->request.destination.ipv6);
                         memcpy(&conn->origin_addr, &parser->request.destination, sizeof(parser->request.destination.ipv6));
                         return init_connection(parser, conn, key);
-                    case ADDRESS_TYPE_DOMAINNAME:
+                    case ADDRESS_TYPE_DOMAINNAME: {
+                        struct selector_key *k = malloc(sizeof(*key));
+                        if (k == NULL) {
+                            return setup_response_error(parser, STATUS_GENERAL_SERVER_FAILURE, conn, key);
+                        }
+                        memcpy(k, key, sizeof(*key));
+                        pthread_t tid;
+                        if (pthread_create(&tid, NULL, &request_resolv_thread, k) != 0) {
+                            free(k);
+                            return setup_response_error(parser, STATUS_GENERAL_SERVER_FAILURE, conn, key);
+                        }
+                        if (selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS) {
+                            return ERROR;
+                        }
                         return REQUEST_RESOLV;
+                    }
                     default:
                         return ERROR;
                 }
@@ -286,6 +331,28 @@ static unsigned request_write(struct selector_key *key) {
     return AUTHENTICATION_WRITE;
 }
 
+// REQUEST_RESOLV
+
+static unsigned request_resolv(struct selector_key *key) {
+    socks5_connection * conn = (socks5_connection *)key->data;
+    struct requestParser * parser = &conn->parser.request;
+
+    if (conn->resolved_addr_current == NULL) {
+        if (conn->resolved_addr != NULL) {
+            freeaddrinfo(conn->resolved_addr);
+            conn->resolved_addr = NULL;
+        }
+        return setup_response_error(parser, STATUS_GENERAL_SERVER_FAILURE, conn, key);
+    }
+
+    conn->origin_domain = conn->resolved_addr_current->ai_family;
+    conn->origin_addr_len = conn->resolved_addr_current->ai_addrlen;
+    memcpy(&conn->origin_addr, conn->resolved_addr_current->ai_addr, conn->resolved_addr_current->ai_addrlen);
+    conn->resolved_addr_current = conn->resolved_addr_current->ai_next;
+
+    return init_connection(parser, conn, key);
+}
+
 // REQUEST_CONNECT
 
 static unsigned request_connect(struct selector_key *key) {
@@ -294,10 +361,23 @@ static unsigned request_connect(struct selector_key *key) {
 
     int error = 0;
     if (getsockopt(conn->origin_socket, SOL_SOCKET, SO_ERROR, &error, &(socklen_t){sizeof(int)})) {
+        if (parser->request.address_type == ADDRESS_TYPE_DOMAINNAME) {
+            freeaddrinfo(conn->resolved_addr);
+        }
         return setup_response_error(parser, STATUS_GENERAL_SERVER_FAILURE, conn, key);
     }
     if(error) {
-        return ERROR;
+        if (parser->request.address_type == ADDRESS_TYPE_DOMAINNAME) {
+            selector_unregister_fd(key->s, conn->origin_socket);
+            close(conn->origin_socket);
+            conn->references--;
+            return request_resolv(key);
+        }
+        // TODO: handle error
+    }
+
+    if (parser->request.address_type == ADDRESS_TYPE_DOMAINNAME) {
+        freeaddrinfo(conn->resolved_addr);
     }
 
     parser->response.status = STATUS_SUCCEDED;
@@ -342,6 +422,7 @@ static const struct state_definition states[] = {
         .on_read_ready = request_read,
     }, {
         .state = REQUEST_RESOLV,
+        .on_block_ready = request_resolv,
     }, {
         .state = REQUEST_CONNECT,
         .on_write_ready = request_connect,
