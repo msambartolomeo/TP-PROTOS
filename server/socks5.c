@@ -160,6 +160,23 @@ static unsigned authentication_write(struct selector_key *key) {
 
 // request auxiliar functions
 
+enum socksResponseStatus connect_error_to_socks(const int e) {
+    switch (e) {
+        case 0:
+            return STATUS_SUCCEDED;
+        case ECONNREFUSED:
+            return STATUS_CONNECTION_REFUSED;
+        case EHOSTUNREACH:
+            return STATUS_HOST_UNREACHABLE;
+        case ENETUNREACH:
+            return STATUS_NETWORK_UNREACHABLE;
+        case ETIMEDOUT:
+            return STATUS_TTL_EXPIRED;
+        default:
+            return STATUS_GENERAL_SERVER_FAILURE;
+    }
+}
+
 static unsigned init_connection(struct requestParser *parser, socks5_connection *conn, struct selector_key *key) {
     conn->origin_socket = socket(conn->origin_domain, SOCK_STREAM | SOCK_NONBLOCK, 0);
     if (conn->origin_socket == -1) {
@@ -373,7 +390,7 @@ static unsigned request_connect(struct selector_key *key) {
             conn->references--;
             return request_resolv(key);
         }
-        // TODO: handle error
+        return setup_response_error(parser, connect_error_to_socks(error), conn, key);
     }
 
     if (parser->request.address_type == ADDRESS_TYPE_DOMAINNAME) {
