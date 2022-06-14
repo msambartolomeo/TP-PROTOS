@@ -3,8 +3,23 @@ SHOES Protocol Version 1.0
 1 Introduction
 
     SHOES is a TCP-based protocol designed to obtain metrics from a server
-    and change it's configuration at runtime. The name is derived from
-    "Should Establish" a connection.
+    and change its configuration at runtime. The name is derived from
+    "Should Establish" a connection. Inspired by SOCKS5 [RFC 1928],
+    it is a simple, reliable, and secure protocol for establishing a
+    connection to a server.
+
+1.1 Considerations
+
+    Unless otherwise noted, the decimal numbers appearing in packet-format
+    diagrams represent the length of the corresponding field, in
+    octets.  Where a given octet must take on a specific value, the
+    syntax X'hh' is used to denote the value of the single octet in that
+    field. When the word 'Variable' is used, it indicates that the
+    corresponding field has a variable length defined either by an
+    associated (one or two octet) length field, or by a data type field.
+
+    In addition, all fields which are larger than one octet are represented
+    in network byte order.
 
 
 
@@ -39,6 +54,11 @@ SHOES Protocol Version 1.0
     A STATUS field of X'00' indicates success. If the server returns a
     `failure' (STATUS value other than X'00') status, it MUST close the
     connection.
+    Other values defined in this version are:
+        o X'01' - General SHOES server failure.
+        o X'02' - Invalid protocol version.
+        o X'03' - Invalid username or password.
+        o X'04' - Internal server error.
 
 
 3 Requests
@@ -58,7 +78,7 @@ SHOES Protocol Version 1.0
               o  FMLY   Family of the request.
                  o  GET Requests X'01'
                  o  PUT Requests X'02'
-              o  CMD    Identifies the command to be executed whithins
+              o  CMD    Identifies the command to be executed whithin
               the family specified.
               o  DATA   Contains the command specific data. Further details
               can be found in the following sections.
@@ -81,6 +101,7 @@ SHOES Protocol Version 1.0
                   o  X'02' BYTES TRANSFERED
                   o  X'03' LIST USERS
                   o  X'04' LIST CREDENTIALS
+                  o  X'05' PASSWORD SPOOFING STATUS
 
 3.2 PUT Requests
 
@@ -94,35 +115,77 @@ SHOES Protocol Version 1.0
 
                 o X'00' ADD USER
                 o X'01' REMOVE USER
+                o X'02' EDIT USER
                 o X'02' MODIFY BUFFER SIZE
                 o X'03' MODIFY SERVER PORT
+                o X'04' MODIFY PASSWORD SPOOFING STATUS
 
         The requets formats are as follows:
 
-        ADD USER
+        3.2.1 ADD USER
             +------+-----+------+----------+------+----------+
             | FMLY | CMD | ULEN |  USNAME  | PLEN |  PASSWD  |
             +------+-----+------+----------+------+----------+
             |  1   |  1  |  1   | 1 to 255 |  1   | 1 to 255 |
             +------+-----+------+----------+------+----------+
 
-        REMOVE USER
+        3.2.2 REMOVE USER
             +------+-----+------+----------+
             | FMLY | CMD | ULEN |  USNAME  |
             +------+-----+------+----------+
             |  1   |  1  |  1   | 1 to 255 |
             +------+-----+------+----------+
 
-        MODIFY BUFFER SIZE
+        3.2.3 EDIT USER
+            +------+-----+------+----------+------+----------+
+            | FMLY | CMD | ULEN |  USNAME  | PLEN |  PASSWD  |
+            +------+-----+------+----------+------+----------+
+            |  1   |  1  |  1   | 1 to 255 |  1   | 1 to 255 |
+            +------+-----+------+----------+------+----------+
+
+        3.2.4 MODIFY BUFFER SIZE
             +------+-----+---------+
             | FMLY | CMD | BUFSIZE |
-            +------+-----+---------+
+            +------+-----+---------+ // Máximo?
             |  1   |  1  |    4    |
             +------+-----+---------+
 
-        MODIFY SERVER PORT
+        3.2.5 MODIFY SERVER PORT
             +------+-----+------+
             | FMLY | CMD | PORT |
             +------+-----+------+
             |  1   |  1  |  4   |
             +------+-----+------+
+
+        3.2.6 MODIFY PASSWORD SPOOFING STATUS
+            +------+-----+------+
+            | FMLY | CMD | SET  |
+            +------+-----+------+ // Pedirle 1 o 0 en SET o cambiar el valor actual?
+            |  1   |  1  |  1   |
+            +------+-----+------+
+
+4 Responses
+
+    After the client has made its request, the server will respond with
+    the following format:
+
+            +--------+--------+----------+
+            | STATUS | REPLEN |   REP    |
+            +--------+--------+----------+
+            |   1    |   4    | Variable | // Replen = 4?
+            +--------+--------+----------+
+
+    Where:
+
+                o  STATUS   Status of the request:
+                        o  X'00' Success
+                        o  X'01' General SHOES server failure
+                        o  X'02' FMLY not supported
+                        o  X'03' CMD not supported
+                        o  X'04' user does not exist
+                        o  X'05' invalid password
+                        o  X'06' user already exists
+                        o  X'07' invalid port number
+                        o  X'08' invalid buffer size???
+                o  REPLEN    Length of the reply.
+                o  REP       Reply data.
