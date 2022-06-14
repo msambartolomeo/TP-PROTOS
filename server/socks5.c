@@ -177,6 +177,18 @@ enum socksResponseStatus connect_error_to_socks(const int e) {
     }
 }
 
+static unsigned setup_response_error(struct requestParser *parser, enum socksResponseStatus status, socks5_connection *conn, struct selector_key *key) {
+    parser->response.status = status;
+    parser->response.address_type = parser->request.address_type;
+    parser->response.port = parser->request.port;
+    parser->response.address = parser->request.destination;
+
+    if (SELECTOR_SUCCESS != selector_set_interest(key->s, conn->client_socket, OP_WRITE) || generate_response(&conn->write_buffer, &parser->response) == -1) {
+        return ERROR;
+    }
+    return REQUEST_WRITE;
+}
+
 static unsigned init_connection(struct requestParser *parser, socks5_connection *conn, struct selector_key *key) {
     conn->origin_socket = socket(conn->origin_domain, SOCK_STREAM | SOCK_NONBLOCK, 0);
     if (conn->origin_socket == -1) {
@@ -197,18 +209,6 @@ static unsigned init_connection(struct requestParser *parser, socks5_connection 
         return ERROR;
     }
     return ERROR; // TODO: ?
-}
-
-static unsigned setup_response_error(struct requestParser *parser, enum socksResponseStatus status, socks5_connection *conn, struct selector_key *key) {
-    parser->response.status = status;
-    parser->response.address_type = parser->request.address_type;
-    parser->response.port = parser->request.port;
-    parser->response.address = parser->request.destination;
-
-    if (SELECTOR_SUCCESS != selector_set_interest(key->s, conn->client_socket, OP_WRITE) || generate_response(&conn->write_buffer, &parser->response) == -1) {
-        return ERROR;
-    }
-    return REQUEST_WRITE;
 }
 
 static void* request_resolv_thread(void * arg) {
@@ -320,33 +320,6 @@ static unsigned request_read(struct selector_key *key) {
     return REQUEST_READ;
 }
 
-// REQUEST_WRITE
-
-static unsigned request_write(struct selector_key *key) {
-    socks5_connection * conn = (socks5_connection *)key->data;
-    struct requestParser * parser = &conn->parser.request;
-
-    size_t count;
-    uint8_t *bufptr = buffer_read_ptr(&conn->write_buffer, &count);
-
-    ssize_t len = send(conn->client_socket, bufptr, count, MSG_NOSIGNAL);
-    if (len == -1) {
-        return ERROR;
-    }
-    buffer_read_adv(&conn->write_buffer, len);
-    if (!buffer_can_read(&conn->write_buffer)) {
-        if (parser->response.status != STATUS_SUCCEDED) {
-            return DONE;
-        }
-        if (SELECTOR_SUCCESS == selector_set_interest_key(key, OP_READ) && SELECTOR_SUCCESS == selector_set_interest(key->s, conn->origin_socket, OP_READ)) {
-            return COPY;
-        }
-        return ERROR;
-    }
-
-    return AUTHENTICATION_WRITE;
-}
-
 // REQUEST_RESOLV
 
 static unsigned request_resolv(struct selector_key *key) {
@@ -359,7 +332,7 @@ static unsigned request_resolv(struct selector_key *key) {
             conn->resolved_addr = NULL;
             conn->resolved_addr_current = NULL;
         }
-        return setup_response_error(parser, STATUS_GENERAL_SERVER_FAILURE, conn, key);
+        return setup_response_error(parser, STATUS_HOST_UNREACHABLE, conn, key); // TODO: check response
     }
 
     conn->origin_domain = conn->resolved_addr_current->ai_family;
@@ -414,6 +387,33 @@ static unsigned request_connect(struct selector_key *key) {
     if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_NOOP) || SELECTOR_SUCCESS != selector_set_interest(key->s, conn->client_socket, OP_WRITE) || generate_response(&conn->write_buffer, &parser->response) == -1) {
         return ERROR;
     }
+    return REQUEST_WRITE;
+}
+
+// REQUEST_WRITE
+
+static unsigned request_write(struct selector_key *key) {
+    socks5_connection * conn = (socks5_connection *)key->data;
+    struct requestParser * parser = &conn->parser.request;
+
+    size_t count;
+    uint8_t *bufptr = buffer_read_ptr(&conn->write_buffer, &count);
+
+    ssize_t len = send(conn->client_socket, bufptr, count, MSG_NOSIGNAL);
+    if (len == -1) {
+        return ERROR;
+    }
+    buffer_read_adv(&conn->write_buffer, len);
+    if (!buffer_can_read(&conn->write_buffer)) {
+        if (parser->response.status != STATUS_SUCCEDED) {
+            return DONE;
+        }
+        if (SELECTOR_SUCCESS == selector_set_interest_key(key, OP_READ) && SELECTOR_SUCCESS == selector_set_interest(key->s, conn->origin_socket, OP_READ)) {
+            return COPY;
+        }
+        return ERROR;
+    }
+
     return REQUEST_WRITE;
 }
 
