@@ -6,6 +6,7 @@
 #include <getopt.h>
 
 #include "args.h"
+#include "users.h"
 
 static unsigned short port(const char *s) {
     char *end     = 0;
@@ -54,7 +55,7 @@ static void usage(const char *progname) {
     exit(1);
 }
 
-void parse_args(const int argc, char **argv, struct socks5args *args) {
+void parse_args(int argc, char* const *argv, struct socks5args *args) {
     memset(args, 0, sizeof(*args)); // sobre todo para setear en null los punteros de users
 
     args->socks_addr = "0.0.0.0";
@@ -66,6 +67,13 @@ void parse_args(const int argc, char **argv, struct socks5args *args) {
     args->disectors_enabled = true;
 
     int c;
+
+    int nusers = 0;
+    struct users *users = malloc(sizeof(struct users) * MAX_USERS);
+    if (users == NULL) {
+      fprintf(stderr, "Error allocating memory for user database\n");
+      exit(1);
+    }
 
     while (true) {
         c = getopt(argc, argv, "hl:L:Np:P:u:v");
@@ -92,12 +100,12 @@ void parse_args(const int argc, char **argv, struct socks5args *args) {
                 args->mng_port   = port(optarg);
                 break;
             case 'u':
-                if(args->nusers >= MAX_USERS) {
-                    fprintf(stderr, "maximun number of command line users reached: %d.\n", MAX_USERS);
+                if(nusers >= MAX_USERS) {
+                    fprintf(stderr, "maximum number of command line users reached: %d.\n", MAX_USERS);
                     exit(1);
                 } else {
-                    user(optarg, args->users + args->nusers);
-                    args->nusers++;
+                    user(optarg, users + nusers);
+                    nusers++;
                 }
                 break;
             case 'v':
@@ -118,4 +126,6 @@ void parse_args(const int argc, char **argv, struct socks5args *args) {
         fprintf(stderr, "\n");
         exit(1);
     }
+
+    initialize_users(users, nusers);
 }
