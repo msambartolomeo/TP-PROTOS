@@ -30,18 +30,21 @@ SHOES Protocol Version 1.0
     subnegotiation begins.  This begins with the client producing a
     Username/Password request:
 
-            +----+------+----------+------+----------+
-            |VER | ULEN |  UNAME   | PLEN |  PASSWD  |
-            +----+------+----------+------+----------+
-            | 1  |  1   | 1 to 255 |  1   | 1 to 255 |
-            +----+------+----------+------+----------+
+            +-----+------+----------+------+----------+
+            | VER | ULEN |  UNAME   | PLEN |  PASSWD  |
+            +-----+------+----------+------+----------+
+            |  1  |  1   | 1 to 255 |  1   | 1 to 255 |
+            +-----+------+----------+------+----------+
 
-    The VER field contains the current version of the subnegotiation,
-    which is X'01'. The ULEN field contains the length of the UNAME field
-    that follows. The UNAME field contains the username as known to the
-    source operating system. The PLEN field contains the length of the
-    PASSWD field that follows. The PASSWD field contains the password
-    association with the given UNAME.
+    Where:
+            o VER    The protocol version number, currently X'01'.
+            o ULEN   The length of the username.
+            o UNAME  The username.
+            o PLEN   The length of the password.
+            o PASSWD The password.
+
+    Both UNAME and PASSWD are in ISO/IEC 8859-1:1998 character set,
+    also known as 8-bit ASCII.
 
     The server verifies the supplied UNAME and PASSWD, and sends the
     following response:
@@ -51,14 +54,15 @@ SHOES Protocol Version 1.0
                          +-----+--------+
                          |  1  |   1    |
                          +-----+--------+
+
     A STATUS field of X'00' indicates success. If the server returns a
-    `failure' (STATUS value other than X'00') status, it MUST close the
+    failure (STATUS value other than X'00') status, it MUST close the
     connection.
+
     Other values defined in this version are:
-        o X'01' - General SHOES server failure.
-        o X'02' - Invalid protocol version.
-        o X'03' - Invalid username or password.
-        o X'04' - Internal server error.
+            o X'01' - General SHOES server failure.
+            o X'02' - Invalid protocol version.
+            o X'03' - Invalid username or password.
 
 
 3 Requests
@@ -76,8 +80,8 @@ SHOES Protocol Version 1.0
     Where:
 
               o  FMLY   Family of the request.
-                 o  GET Requests X'01'
-                 o  PUT Requests X'02'
+                 o  GET Requests X'00'
+                 o  PUT Requests X'01'
               o  CMD    Identifies the command to be executed whithin
               the family specified.
               o  DATA   Contains the command specific data. Further details
@@ -96,12 +100,14 @@ SHOES Protocol Version 1.0
 
         The values currently defined for CMD in this family are:
 
-                  o  X'00' HISTORIC CONNECTIONS
-                  o  X'01' CONCURRENT CONNECTIONS
-                  o  X'02' BYTES TRANSFERED
+                  o  X'00' SERVER METRICS
                   o  X'03' LIST USERS
                   o  X'04' LIST CREDENTIALS
                   o  X'05' PASSWORD SPOOFING STATUS
+
+        Section 4.1 goes into greater details on how the responses
+        are formed.
+
 
 3.2 PUT Requests
 
@@ -116,76 +122,176 @@ SHOES Protocol Version 1.0
                 o X'00' ADD USER
                 o X'01' REMOVE USER
                 o X'02' EDIT USER
-                o X'02' MODIFY BUFFER SIZE
-                o X'03' MODIFY SERVER PORT
+                o X'03' MODIFY BUFFER SIZE
                 o X'04' MODIFY PASSWORD SPOOFING STATUS
 
         The requets formats are as follows:
 
         3.2.1 ADD USER
-            +------+-----+------+----------+------+----------+
-            | FMLY | CMD | ULEN |  USNAME  | PLEN |  PASSWD  |
-            +------+-----+------+----------+------+----------+
-            |  1   |  1  |  1   | 1 to 255 |  1   | 1 to 255 |
-            +------+-----+------+----------+------+----------+
+            +---------+---------+------+----------+------+----------+
+            |  FMLY   |   CMD   | ULEN |  USNAME  | PLEN |  PASSWD  |
+            +---------+---------+------+----------+------+----------+
+            |  X'01'  |  X'00'  |  1   | 1 to 255 |  1   | 1 to 255 |
+            +---------+---------+------+----------+------+----------+
+
+            Where both USANME and PASSWD are in ISO/IEC 8859-1:1998 character
+            set, also known as 8-bit ASCII. The server will try to create a new
+            user with the given USNAME and PASSWD. If the user already
+            exists, the server will return a failure status.
+
 
         3.2.2 REMOVE USER
-            +------+-----+------+----------+
-            | FMLY | CMD | ULEN |  USNAME  |
-            +------+-----+------+----------+
-            |  1   |  1  |  1   | 1 to 255 |
-            +------+-----+------+----------+
+            +---------+---------+------+----------+
+            |  FMLY   |   CMD   | ULEN |  USNAME  |
+            +---------+---------+------+----------+
+            |  X'01'  |  X'01'  |  1   | 1 to 255 |
+            +---------+---------+------+----------+
+
+            Where USNAME is in ISO/IEC 8859-1:1998 character set, also known
+            as 8-bit ASCII. The server will try to remove the user with the
+            given USNAME. If the user does not exist, the server will return
+            a failure status.
+
 
         3.2.3 EDIT USER
-            +------+-----+------+----------+------+----------+
-            | FMLY | CMD | ULEN |  USNAME  | PLEN |  PASSWD  |
-            +------+-----+------+----------+------+----------+
-            |  1   |  1  |  1   | 1 to 255 |  1   | 1 to 255 |
-            +------+-----+------+----------+------+----------+
+            +---------+---------+------+----------+------+----------+
+            |  FMLY   |   CMD   | ULEN |  USNAME  | PLEN |  PASSWD  |
+            +---------+---------+------+----------+------+----------+
+            |  X'01'  |  X'02'  |  1   | 1 to 255 |  1   | 1 to 255 |
+            +---------+---------+------+----------+------+----------+
+
+            Where USNAME is in ISO/IEC 8859-1:1998 character set, also known
+            as 8-bit ASCII. The server will try to associate the given USNAME
+            with the given PASSWD. If the user does not exist, the server will
+            return a failure status.
+
 
         3.2.4 MODIFY BUFFER SIZE
-            +------+-----+---------+
-            | FMLY | CMD | BUFSIZE |
-            +------+-----+---------+ // Máximo?
-            |  1   |  1  |    4    |
-            +------+-----+---------+
+            +---------+---------+---------+
+            |  FMLY   |   CMD   | BUFSIZE |
+            +---------+---------+---------+ // Máximo?
+            |  X'01'  |  X'03'  |    2    |
+            +---------+---------+---------+
 
-        3.2.5 MODIFY SERVER PORT
-            +------+-----+------+
-            | FMLY | CMD | PORT |
-            +------+-----+------+
-            |  1   |  1  |  4   |
-            +------+-----+------+
+            Where BUFSIZE is a 4 octet integer representing the buffer size
+            in bytes. The server will try to modify the buffer size to the
+            given value. However, the server will not allow the buffer size
+            to be set to a value less than 512 bytes, or greater than 65536
+            bytes. If a value outside the allowed range is given, the server
+            will return a failure status and not modify the buffer size.
 
-        3.2.6 MODIFY PASSWORD SPOOFING STATUS
-            +------+-----+------+
-            | FMLY | CMD | SET  |
-            +------+-----+------+ // Pedirle 1 o 0 en SET o cambiar el valor actual?
-            |  1   |  1  |  1   |
-            +------+-----+------+
+
+        3.2.5 MODIFY PASSWORD SPOOFING STATUS
+            +---------+---------+------+
+            |  FMLY   |   CMD   | SET  |
+            +---------+---------+------+ // Pedirle 1 o 0 en SET o cambiar el valor actual?
+            |  X'01'  |  X'04'  |  1   |
+            +---------+---------+------+ // Aclarar bit o ASCII, obviamente bit
+
+            Where SET is a 1 octet integer representing the password spoofing
+            status. A value of X'00' indicates that the server should not
+            spoof passwords. A value of X'01' indicates that the server should
+            spoof passwords. If a value other than X'00' or X'01' is given,
+            the server will return a failure status and not modify the
+            password spoofing status.
 
 4 Responses
 
-    After the client has made its request, the server will respond with
-    the following format:
+    As stated previoulsy, the server will return a different format
+    depending on the command that was requested. The following sections
+    go into greater details on how the replies are formed.
 
-            +--------+--------+----------+
-            | STATUS | REPLEN |   REP    |
-            +--------+--------+----------+
-            |   1    |   4    | Variable | // Replen = 4?
-            +--------+--------+----------+
+    However, all response formats begin with the STATUS field, which can
+    take the following values:
+            o  X'00' Success
+            o  X'01' General SHOES server failure
+            o  X'02' FMLY not supported
+            o  X'03' CMD not supported
+            o  X'04' CMD-specific failure status. See
+            the following sections for more details.
+
+    If the server returns a failure (STATUS value other than X'00'),
+    it MUST close the connection.
+
+4.1 Responses to GET Requests
+
+    The response to a GET request contains the data the request asked for.
+    However, the data is not in a fixed format. The following sections
+    go into greater details on how the replies are formed.
+    It is important to note that GET requests will not return a CMD-specific
+    failure status.
+
+4.1.1 SERVER METRICS
+
+    The server will return the following reply:
+
+            +--------+-------+-------+---------+
+            | STATUS | HCONN | CCONN | BTRANSF |
+            +--------+-------+-------+---------+
+            |   1    |   4   |   4   |    4    |
+            +--------+-------+-------+---------+
 
     Where:
+            o STATUS    Status of the request.
+            o HCONN     Number of historic connections to the server.
+            o CCONN     Number of current connections to the server.
+            o BTRANSF   Number of bytes transferred by the server.
 
-                o  STATUS   Status of the request:
-                        o  X'00' Success
-                        o  X'01' General SHOES server failure
-                        o  X'02' FMLY not supported
-                        o  X'03' CMD not supported
-                        o  X'04' user does not exist
-                        o  X'05' invalid password
-                        o  X'06' user already exists
-                        o  X'07' invalid port number
-                        o  X'08' invalid buffer size???
-                o  REPLEN    Length of the reply.
-                o  REP       Reply data.
+
+4.1.2 LIST USERS
+
+    The server will return the following reply:
+
+                +--------+------+----------+
+                | STATUS | ULEN |  USERS   |
+                +--------+------+----------+
+                |   1    |  4   | Variable |
+                +--------+------+----------+
+    Where:
+            o STATUS    Status of the request.
+            o ULEN      Length of the USERS field.
+            o USERS     List of users.
+
+    The USERS field is a list of usernames in ISO/IEC 8859-1:1998 character
+    set, also known as 8-bit ASCII. Each username is separated by a null
+    value.
+
+
+4.1.3 LIST CREDENTIALS
+// TODO
+
+4.1.4 PASSWORD SPOOFING STATUS
+
+    The server will return the following reply:
+
+                +--------+-------+
+                | STATUS | SPOOF |
+                +--------+-------+
+                |   1    |   4   |
+                +--------+-------+
+
+    Where:
+            o STATUS    Status of the request.
+            o SPOOF     Password spoofing status.
+
+    The field SPOOF contains one octect, which is either X'00' or X'01',
+    representing the password spoofing status as disabled or enabled,
+    respectively.
+
+4.2 Responses to PUT Requests
+
+    The response to a PUT request contains the status of the request,
+    which will be used to determine if the request was successful.
+    In addition, responses to PUT requests can return a CMD-specific
+    failure status, indicating a failure specific to the command.
+
+    Therefore, a STATUS of X'04' indicates:
+        o ADD USER              - The user already exists.
+        o REMOVE USER           - The user does not exist.
+        o EDIT USER             - The user does not exist.
+        o MODIFY BUFFER SIZE    - The buffer size is out of range.
+        o MODIFY PASSWORD SPOOFING STATUS - The password spoofing
+        status is out of range.
+
+    See section 3.2 for more details in accepted values ranges for each
+    command.
