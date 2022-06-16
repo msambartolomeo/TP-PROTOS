@@ -1,6 +1,4 @@
-#include <arpa/inet.h>
 #include <buffer.h>
-#include <errno.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,9 +12,11 @@
 #include "stm.h"
 #include "socks5.h"
 
-#define DEFAULT_CLIENT_PORT 1080
-#define DEFAULT_SERVER_PORT 80
 #define SELECTOR_TIMEOUT 100
+#define DEFAULT_SOCKS_ADDR_IPV4 "0.0.0.0"
+#define DEFAULT_SOCKS_ADDR_IPV6 "::"
+#define DEFAULT_SHOES_ADDR_IPV4 "127.0.0.1"
+#define DEFAULT_SHOES_ADDR_IPV6 "::1"
 
 static fd_selector selector;
 
@@ -137,9 +137,75 @@ static void passive_socket_handler(struct selector_key *key)
 
 const struct fd_handler passiveSocketFdHandler = {passive_socket_handler, 0, 0, 0};
 
-int network_handler()
+static char *error_msg;
+
+static int create_socket(char *port, char *addr, const struct fd_handler *selector_handler) {
+    struct addrinfo hint, *res = NULL;
+    int ret, fd;
+    bool error = false;
+
+    memset(&hint, 0, sizeof(hint));
+
+    hint.ai_family = PF_UNSPEC;
+    hint.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
+
+    ret = getaddrinfo(addr, port, &hint, &res);
+    if (ret) {
+        fprintf(stderr,"unable to get address info: %s", gai_strerror(ret));
+        error = true;
+        goto finally;
+    }
+
+    fd = socket(res->ai_family, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
+    if (fd == -1) {
+        error_msg = "unable to create socket";
+        error = true;
+        goto finally;
+    }
+
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) == -1) {
+        error_msg = "unable to set socket options";
+        error = true;
+        goto finally;
+    }
+
+    if (bind(fd, res->ai_addr, res->ai_addrlen) < 0) {
+        error_msg = "bind client socket error";
+        error = true;
+        goto finally;
+    }
+
+    if (listen(fd, 1) < 0) {
+        error_msg = "listen client socket error";
+        error = true;
+        goto finally;
+    }
+
+    int registerRet;
+    if((registerRet = selector_register(selector, fd, selector_handler, OP_READ, NULL)) != SELECTOR_SUCCESS) {
+        fprintf(stderr, "Passive socket register error: %s", selector_error(registerRet));
+        error = true;
+        goto finally;
+    }
+
+finally:
+    if (error) {
+        close(fd);
+        fd = -1;
+    }
+
+    freeaddrinfo(res);
+
+    return fd;
+}
+
+int network_handler(char *socks_addr, char *socks_port, char *shoes_addr, char *shoes_port)
 {
-    char *error_msg = NULL;
+    error_msg = NULL;
+    int fd_socks = -1, fd_shoes = -1;
+    // extra fds in case we need to create ipv4 and ipv6 sockets
+    int fd_socks2 = -1, fd_shoes2 = -1;
+    int ret = 0;
 
     signal(SIGCHLD, networkSelectorSignalHandler);
 
@@ -148,67 +214,58 @@ int network_handler()
     struct selector_init select_init_struct = {SIGCHLD, select_timeout};
 
     int selector_init_ret;
-    if ((selector_init_ret = selector_init(&select_init_struct)) != SELECTOR_SUCCESS)
-    {
+    if ((selector_init_ret = selector_init(&select_init_struct)) != SELECTOR_SUCCESS) {
         fprintf(stderr, "Selector init error: %s", selector_error(selector_init_ret));
-        goto error;
+        goto finally;
     }
 
     selector = selector_new(20);
-    if (selector == NULL)
-    {
+    if (selector == NULL) {
         error_msg = "No se pudo instanciar el selector.";
-        goto error;
+        goto finally;
     }
 
-    const int passiveSocket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
-    if (!(passiveSocket))
-    {
-        error_msg = "unable to create socket";
-        goto error;
+    if (socks_addr == NULL) {
+        if ((fd_socks = create_socket(socks_port, DEFAULT_SHOES_ADDR_IPV4, &passiveSocketFdHandler)) == -1) {
+            goto finally;
+        }
+        if ((fd_socks2 = create_socket(socks_port, DEFAULT_SHOES_ADDR_IPV6, &passiveSocketFdHandler)) == -1) {
+            goto finally;
+        }
+    } else {
+        if ((fd_socks = create_socket(socks_port, socks_addr, &passiveSocketFdHandler)) == -1) {
+            goto finally;
+        }
     }
+    // todo: create shoes sockets
 
-    setsockopt(passiveSocket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
-
-    struct sockaddr_in passiveaddr = {0};
-    passiveaddr.sin_addr.s_addr = INADDR_ANY;
-    passiveaddr.sin_family = AF_INET;
-    passiveaddr.sin_port = htons(DEFAULT_CLIENT_PORT);
-    if (bind(passiveSocket, (struct sockaddr *)&passiveaddr, sizeof(passiveaddr)) < 0)
-    {
-        error_msg = "bind client socket error";
-        goto error;
-    }
-
-    if (listen(passiveSocket, 1) < 0)
-    {
-        error_msg = "listen client socket error";
-        goto error;
-    }
-
-    int registerRet;
-    if((registerRet = selector_register(selector, passiveSocket, &passiveSocketFdHandler, OP_READ, NULL)) != SELECTOR_SUCCESS) {
-        fprintf(stderr, "Passive socket register error: %s", selector_error(registerRet));
-        exit(1);
-    }
-
-    while (1)
-    {
+    while (1) {
         int selectorStatus = selector_select(selector);
         if(selectorStatus != SELECTOR_SUCCESS) {
             fprintf(stderr, "Selector Select Error: %s", selector_error(selectorStatus));
-            exit(1);
+            goto finally;
         }
     }
 
-error:
+finally:
     if (error_msg)
     {
         perror(error_msg);
-        return -1;
+        ret = -1;
     }
 
-    return 0;
+    if (fd_socks != -1)
+        close(fd_socks);
+    if (fd_socks2 != -1)
+        close(fd_socks2);
+    if (fd_shoes != -1)
+        close(fd_shoes);
+    if (fd_shoes2 != -1)
+        close(fd_shoes2);
+
+    selector_destroy(selector);
+
+    return ret;
 }
 
 void network_handler_cleanup()

@@ -7,13 +7,13 @@
 #define MAX_USERS 10
 
 struct socks5args {
-    char           *socks_addr;
-    unsigned short  socks_port;
+    char *socks_addr;
+    char *socks_port;
 
-    char *          mng_addr;
-    unsigned short  mng_port;
+    char *shoes_addr;
+    char *shoes_port;
 
-    bool            disectors_enabled;
+    bool disectors_enabled;
 };
 
 /**

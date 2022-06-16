@@ -5,12 +5,6 @@
 #include "args.h"
 #include "users.h"
 
-static struct socks5args args;
-
-struct socks5args *get_args() {
-    return &args;
-}
-
 static void
 sigterm_handler(const int signal) {
     char* sigtype;
@@ -35,9 +29,12 @@ int main(int argc, char* const *argv) {
     signal(SIGTERM, sigterm_handler);
     signal(SIGINT, sigterm_handler);
 
+    struct socks5args args;
     parse_args(argc, argv, &args);
 
-    int retcode = network_handler();
+    int retcode = network_handler(args.socks_addr, args.socks_port, args.shoes_addr, args.shoes_port);
     network_handler_cleanup();
+    free_users();
+
     return retcode;
 }

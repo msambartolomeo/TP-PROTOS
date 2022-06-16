@@ -1,5 +1,6 @@
 #include "users.h"
 #include <string.h>
+#include <stdlib.h>
 
 static struct users *userDatabase;
 static uint8_t nUsers;
@@ -11,6 +12,10 @@ void initialize_users(struct users *users, uint8_t nusers) {
     if (nusers == 0) {
         auth_required = false;
     }
+}
+
+void free_users() {
+    free(userDatabase);
 }
 
 bool get_auth_state() {
