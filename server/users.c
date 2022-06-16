@@ -3,10 +3,22 @@
 
 static struct users *userDatabase;
 static uint8_t nUsers;
+static bool auth_required = true;
 
 void initialize_users(struct users *users, uint8_t nusers) {
     userDatabase = users;
     nUsers = nusers;
+    if (nusers == 0) {
+        auth_required = false;
+    }
+}
+
+bool get_auth_state() {
+    return auth_required;
+}
+
+void change_auth_state(bool required) {
+    auth_required = required;
 }
 
 int compare_users(char * one, char * two) {

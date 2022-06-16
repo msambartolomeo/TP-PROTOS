@@ -37,12 +37,6 @@ int main(int argc, char* const *argv) {
 
     parse_args(argc, argv, &args);
 
-    // TODO: remove when args are added
-    struct users users[MAX_USERS] = {
-        {"pepe", "pepe"}
-    };
-    initialize_users(users, 1);
-
     int retcode = network_handler();
     network_handler_cleanup();
     return retcode;
