@@ -1,25 +1,23 @@
-#include <errno.h>
 #include <getopt.h>
-#include <limits.h> /* LONG_MIN et al */
 #include <stdio.h>  /* for printf */
 #include <stdlib.h> /* for exit */
 #include <string.h> /* memset */
 
 #include "args.h"
 
-static unsigned short port(const char* s) {
-    char* end = 0;
-    const long sl = strtol(s, &end, 10);
-
-    if (end == s || '\0' != *end ||
-        ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno) || sl < 0 ||
-        sl > USHRT_MAX) {
-        fprintf(stderr, "port should in in the range of 1-65536: %s\n", s);
-        exit(1);
-        return 1;
-    }
-    return (unsigned short)sl;
-}
+//static unsigned short port(const char* s) {
+//    char* end = 0;
+//    const long sl = strtol(s, &end, 10);
+//
+//    if (end == s || '\0' != *end ||
+//        ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno) || sl < 0 ||
+//        sl > USHRT_MAX) {
+//        fprintf(stderr, "port should in in the range of 1-65536: %s\n", s);
+//        exit(1);
+//        return 1;
+//    }
+//    return (unsigned short)sl;
+//}
 
 static void user(char* s, struct shoesUser* user) {
     char* p = strchr(s, ':');
@@ -71,7 +69,7 @@ static void usage(const char* progname) {
 void parse_args(const int argc, char** argv, struct shoesArgs* args) {
     memset(
         args, 0,
-        sizeof(*args)); // sobre todo para setear en null los punteros de users
+        sizeof(*args));
 
 
     int c;
@@ -95,7 +93,7 @@ void parse_args(const int argc, char** argv, struct shoesArgs* args) {
             args->getPasswordSpoofingStatus = true;
             break;
         case 'u':
-            shoesUser(optarg, &args->authUser);
+            user(optarg, &args->authUser);
             break;
         case 'v':
             version();
@@ -110,6 +108,7 @@ void parse_args(const int argc, char** argv, struct shoesArgs* args) {
         fprintf(stderr, "argument not accepted: ");
         while (optind < argc) {
             fprintf(stderr, "%s ", argv[optind++]);
+            optind++;
         }
         fprintf(stderr, "\n");
         exit(1);

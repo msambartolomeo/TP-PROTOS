@@ -1,11 +1,8 @@
-#include <arpa/inet.h>
 #include <memory.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #include "shoes.h"
 
@@ -20,13 +17,13 @@ static shoesConnection conn = {0};
 
 static int serverConnection(const char* host, const char* port) {
     if(conn.initialized) {
-        fprintf(stderr, "Error: Tried to connect to server more than once.");
+        fprintf(stderr, "Error: Tried to connect to server more than once.\n");
         return -1;
     }
     conn.fd = -1;
 
     struct addrinfo* info;
-    struct addrinfo hints;
+    struct addrinfo hints = {0};
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
@@ -50,7 +47,7 @@ static int serverConnection(const char* host, const char* port) {
     freeaddrinfo(info);
 
     if(conn.fd == -1) {
-        fprintf(stderr, "Couldn't connect to server.");
+        fprintf(stderr, "Couldn't connect to server.\n");
         return -1;
     }
 
@@ -106,7 +103,7 @@ shoesConnectStatus shoesConnect(const char* host, const char* port,
     uint8_t serv_ret = (uint8_t)buf[1];
 
     if(*(uint8_t*)buf != SHOES_VER) {
-        fprintf(stderr, "Invalid server shoes version: %d", serv_ver);
+        fprintf(stderr, "Invalid server shoes version: %d\n", serv_ver);
         return CONNECT_SERV_FAIL;
     }
 
@@ -159,7 +156,7 @@ shoesResponseStatus shoesGetMetrics(shoesServerMetrics* metrics) {
     const int RES_LEN = 13;
 
     if(sendGetRequest(CMD_METRICS) == -1) {
-        fprintf(stderr, "Metrics request error");
+        fprintf(stderr, "Metrics request error\n");
         return -1; //TODO
     }
 
@@ -183,7 +180,7 @@ shoesResponseStatus shoesGetMetrics(shoesServerMetrics* metrics) {
 
 shoesResponseStatus shoesGetUserList(shoesUserList* list) {
     if(sendGetRequest(CMD_LIST_USERS) == -1) {
-        fprintf(stderr, "Metrics request error");
+        fprintf(stderr, "Metrics request error\n");
         return -1; //TODO
     }
 
@@ -200,7 +197,7 @@ shoesResponseStatus shoesGetUserList(shoesUserList* list) {
 
     char* usersBuf = malloc(ulen);
     if(usersBuf == NULL) {
-        fprintf(stderr, "Out of memory.");
+        fprintf(stderr, "Out of memory.\n");
         return -1; //TODO
     }
 
@@ -211,7 +208,7 @@ shoesResponseStatus shoesGetUserList(shoesUserList* list) {
 
     list->users = malloc(ulen * sizeof(char**));
     if(list->users == NULL) {
-        fprintf(stderr, "Out of memory.");
+        fprintf(stderr, "Out of memory.\n");
         return -1; //TODO
     }
 
@@ -262,7 +259,7 @@ shoesResponseStatus shoesAddUser(const shoesUser* user) {
     dataLen += plen;
 
     if(sendPutRequest(CMD_ADD_USER, data, dataLen) == -1) {
-        fprintf(stderr,"Add user request error");
+        fprintf(stderr,"Add user request error\n");
         return -1;
     }
 
@@ -281,7 +278,7 @@ shoesResponseStatus shoesRemoveUser(const char* user) {
     dataLen += ulen;
 
     if(sendPutRequest(CMD_REMOVE_USER, data, dataLen) == -1) {
-        fprintf(stderr,"Remove user request error");
+        fprintf(stderr,"Remove user request error\n");
         return -1;
     }
 
@@ -294,7 +291,7 @@ inline shoesResponseStatus shoesEditUser(const shoesUser* user) {
 
 shoesResponseStatus shoesModifyBufferSize(uint32_t size) {
     if(sendPutRequest(CMD_MODIFY_BUFFER, &size, sizeof(uint32_t)) == -1) {
-        fprintf(stderr,"Modify buffer request error");
+        fprintf(stderr,"Modify buffer request error\n");
         return -1;
     }
 
@@ -303,7 +300,7 @@ shoesResponseStatus shoesModifyBufferSize(uint32_t size) {
 
 shoesResponseStatus shoesModifyPasswordSpoofingStatus(bool newStatus) {
     if(sendPutRequest(CMD_MODIFY_SPOOF, &newStatus, sizeof(bool)) == -1) {
-        fprintf(stderr,"Modify spoofing request error");
+        fprintf(stderr,"Modify spoofing request error\n");
         return -1;
     }
 

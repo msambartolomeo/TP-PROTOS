@@ -11,7 +11,7 @@ struct shoesArgs {
     struct shoesUser authUser;
 
     bool listUsers;
-    bool listCredentials;
+    bool listCredentials; //TODO
     bool getServerMetrics;
     bool getPasswordSpoofingStatus;
 
@@ -19,7 +19,7 @@ struct shoesArgs {
     struct shoesUser addUsers[MAX_USERS];
 
     uint8_t nRemoveUsers;
-    struct shoesUser removeUsers[MAX_USERS];
+    char* removeUsers[MAX_USERS];
 
     uint8_t nEditUsers;
     struct shoesUser editUsers[MAX_USERS];
