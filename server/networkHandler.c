@@ -189,7 +189,7 @@ static int create_socket(char *port, char *addr, const struct fd_handler *select
     }
 
 finally:
-    if (error) {
+    if (error && fd != -1) {
         close(fd);
         fd = -1;
     }
