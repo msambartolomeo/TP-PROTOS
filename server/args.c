@@ -6,17 +6,17 @@
 #include <getopt.h>
 
 #include "args.h"
+#include "users.h"
 
-static unsigned short port(const char *s) {
+static char *port(char *s) {
     char *end     = 0;
     const long sl = strtol(s, &end, 10);
 
     if (end == s || '\0' != *end || ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno) || sl < 0 || sl > USHRT_MAX) {
         fprintf(stderr, "port should in in the range of 1-65536: %s\n", s);
-        exit(1);
-        return 1;
+        return NULL;
     }
-    return (unsigned short)sl;
+    return s;
 }
 
 static void user(char *s, struct users *user) {
@@ -51,21 +51,27 @@ static void usage(const char *progname) {
         "   -v               Imprime información sobre la versión versión y termina.\n"
         "\n",
         progname);
-    exit(1);
 }
 
-void parse_args(const int argc, char **argv, struct socks5args *args) {
-    memset(args, 0, sizeof(*args)); // sobre todo para setear en null los punteros de users
+void parse_args(int argc, char* const *argv, struct socks5args *args) {
+    memset(args, 0, sizeof(*args));
 
-    args->socks_addr = "0.0.0.0";
-    args->socks_port = 1080;
+    args->socks_addr = NULL;
+    args->socks_port = "1080";
 
-    args->mng_addr   = "127.0.0.1";
-    args->mng_port   = 8080;
+    args->shoes_addr   = NULL;
+    args->shoes_port   = "8080";
 
     args->disectors_enabled = true;
 
     int c;
+
+    int nusers = 0;
+    struct users *users = malloc(sizeof(struct users) * MAX_USERS);
+    if (users == NULL) {
+      fprintf(stderr, "Error allocating memory for user database\n");
+      exit(1);
+    }
 
     while (true) {
         c = getopt(argc, argv, "hl:L:Np:P:u:v");
@@ -75,37 +81,49 @@ void parse_args(const int argc, char **argv, struct socks5args *args) {
         switch (c) {
             case 'h':
                 usage(argv[0]);
+                free(users);
+                exit(0);
                 break;
             case 'l':
                 args->socks_addr = optarg;
                 break;
             case 'L':
-                args->mng_addr = optarg;
+                args->shoes_addr = optarg;
                 break;
             case 'N':
                 args->disectors_enabled = false;
                 break;
             case 'p':
                 args->socks_port = port(optarg);
+                if (args->socks_port == NULL) {
+                    free(users);
+                    exit(1);
+                }
                 break;
             case 'P':
-                args->mng_port   = port(optarg);
+                args->shoes_port = port(optarg);
+                if (args->shoes_port == NULL) {
+                    free(users);
+                    exit(1);
+                }
                 break;
             case 'u':
-                if(args->nusers >= MAX_USERS) {
-                    fprintf(stderr, "maximun number of command line users reached: %d.\n", MAX_USERS);
+                if(nusers >= MAX_USERS) {
+                    fprintf(stderr, "maximum number of command line users reached: %d.\n", MAX_USERS);
+                    free(users);
                     exit(1);
                 } else {
-                    user(optarg, args->users + args->nusers);
-                    args->nusers++;
+                    user(optarg, users + nusers);
+                    nusers++;
                 }
                 break;
             case 'v':
                 version();
+                free(users);
                 exit(0);
-                break;
             default:
                 fprintf(stderr, "unknown argument %d.\n", c);
+                free(users);
                 exit(1);
         }
 
@@ -116,6 +134,9 @@ void parse_args(const int argc, char **argv, struct socks5args *args) {
             fprintf(stderr, "%s ", argv[optind++]);
         }
         fprintf(stderr, "\n");
+        free(users);
         exit(1);
     }
+
+    initialize_users(users, nusers);
 }

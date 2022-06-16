@@ -6,22 +6,14 @@
 
 #define MAX_USERS 10
 
-struct users {
-    char *name;
-    char *pass;
-};
-
 struct socks5args {
-    char           *socks_addr;
-    unsigned short  socks_port;
+    char *socks_addr;
+    char *socks_port;
 
-    char *          mng_addr;
-    unsigned short  mng_port;
+    char *shoes_addr;
+    char *shoes_port;
 
-    bool            disectors_enabled;
-
-    uint8_t         nusers;
-    struct users    users[MAX_USERS];
+    bool disectors_enabled;
 };
 
 /**
@@ -30,7 +22,7 @@ struct socks5args {
  * la ejecución.
  */
 void 
-parse_args(const int argc, char **argv, struct socks5args *args);
+parse_args(int argc, char* const *argv, struct socks5args *args);
 
 #endif
 

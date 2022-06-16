@@ -206,7 +206,8 @@ static unsigned init_connection(struct requestParser *parser, socks5_connection 
             }
             return REQUEST_CONNECT;
         }
-        return ERROR;
+        perror("connect");
+        return setup_response_error(parser, connect_error_to_socks(errno), conn, key);
     }
     return ERROR; // TODO: ?
 }
