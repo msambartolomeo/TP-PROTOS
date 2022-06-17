@@ -8,10 +8,7 @@ typedef struct shoesUser {
     char* pass;
 } shoesUser;
 
-typedef enum shoesFamily {
-    SHOES_GET = 0,
-    SHOES_PUT
-} shoesFamily;
+typedef enum shoesFamily { SHOES_GET = 0, SHOES_PUT } shoesFamily;
 
 typedef enum shoesPutCommand {
     CMD_ADD_USER = 0,
@@ -36,7 +33,7 @@ typedef enum shoesConnectStatus {
 } shoesConnectStatus;
 
 shoesConnectStatus shoesConnect(const char* host, const char* port,
-                                     const shoesUser* user);
+                                const shoesUser* user);
 
 typedef enum shoesResponseStatus {
     RESPONSE_SUCCESS = 0,

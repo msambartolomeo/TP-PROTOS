@@ -1,9 +1,9 @@
 #ifndef ARGS_H_kFlmYm1tW9p5npzDr2opQJ9jM8
 #define ARGS_H_kFlmYm1tW9p5npzDr2opQJ9jM8
 
+#include "shoes.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include "shoes.h"
 
 #define MAX_USERS 10
 
@@ -11,7 +11,7 @@ struct shoesArgs {
     struct shoesUser authUser;
 
     bool listUsers;
-    bool listCredentials; //TODO
+    bool listCredentials; // TODO
     bool getServerMetrics;
     bool getPasswordSpoofingStatus;
 

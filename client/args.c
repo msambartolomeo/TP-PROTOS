@@ -5,19 +5,19 @@
 
 #include "args.h"
 
-//static unsigned short port(const char* s) {
-//    char* end = 0;
-//    const long sl = strtol(s, &end, 10);
+// static unsigned short port(const char* s) {
+//     char* end = 0;
+//     const long sl = strtol(s, &end, 10);
 //
-//    if (end == s || '\0' != *end ||
-//        ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno) || sl < 0 ||
-//        sl > USHRT_MAX) {
-//        fprintf(stderr, "port should in in the range of 1-65536: %s\n", s);
-//        exit(1);
-//        return 1;
-//    }
-//    return (unsigned short)sl;
-//}
+//     if (end == s || '\0' != *end ||
+//         ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno) || sl < 0 ||
+//         sl > USHRT_MAX) {
+//         fprintf(stderr, "port should in in the range of 1-65536: %s\n", s);
+//         exit(1);
+//         return 1;
+//     }
+//     return (unsigned short)sl;
+// }
 
 static void user(char* s, struct shoesUser* user) {
     char* p = strchr(s, ':');
@@ -39,10 +39,10 @@ static void version(void) {
 }
 
 static void list(char* s, struct shoesArgs* args) {
-    if(strcmp(s, "u") == 0)
+    if (strcmp(s, "u") == 0)
         args->listUsers = true;
-    else if(strcmp(s, "c") == 0)
-        args -> listCredentials = true;
+    else if (strcmp(s, "c") == 0)
+        args->listCredentials = true;
     else {
         fprintf(stderr, "Unknown argument: -l%s", s);
         exit(1);
@@ -55,10 +55,10 @@ static void usage(const char* progname) {
             "\n"
             "   -h               Imprime la ayuda y termina.\n"
             "   -lu              Lista los usuarios.\n"
-            "   -lc              Lista las credenciales.\n"
             "   -m               Muestra las métricas del servidor.\n"
             "   -s               Muestra el estado del password spoofing.\n"
-            "   -u <name>:<pass> Usuario y contraseña para acceder al servidor SHOES\n"
+            "   -u <name>:<pass> Usuario y contraseña para acceder al servidor "
+            "SHOES\n"
             "   -v               Imprime información sobre la versión de shoesc"
             "y termina.\n"
             "\n",
@@ -67,10 +67,7 @@ static void usage(const char* progname) {
 }
 
 void parse_args(const int argc, char** argv, struct shoesArgs* args) {
-    memset(
-        args, 0,
-        sizeof(*args));
-
+    memset(args, 0, sizeof(*args));
 
     int c;
 

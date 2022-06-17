@@ -16,7 +16,7 @@ typedef struct shoesConnection {
 static shoesConnection conn = {0};
 
 static int serverConnection(const char* host, const char* port) {
-    if(conn.initialized) {
+    if (conn.initialized) {
         fprintf(stderr, "Error: Tried to connect to server more than once.\n");
         return -1;
     }
@@ -28,17 +28,17 @@ static int serverConnection(const char* host, const char* port) {
     hints.ai_socktype = SOCK_STREAM;
 
     int status;
-    if((status = getaddrinfo(host, port, &hints, &info)) != 0) {
+    if ((status = getaddrinfo(host, port, &hints, &info)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
         return -1;
     }
 
-    for(struct addrinfo* p = info; p != NULL; p = p->ai_next) {
+    for (struct addrinfo* p = info; p != NULL; p = p->ai_next) {
         int sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        if(sock == -1)
+        if (sock == -1)
             continue;
 
-        if(connect(sock, p->ai_addr, p->ai_addrlen) != 0)
+        if (connect(sock, p->ai_addr, p->ai_addrlen) != 0)
             continue;
 
         conn.fd = sock;
@@ -46,7 +46,7 @@ static int serverConnection(const char* host, const char* port) {
     }
     freeaddrinfo(info);
 
-    if(conn.fd == -1) {
+    if (conn.fd == -1) {
         fprintf(stderr, "Couldn't connect to server.\n");
         return -1;
     }
@@ -59,50 +59,50 @@ shoesConnectStatus shoesConnect(const char* host, const char* port,
     const int REQ_MAXLEN = 513;
     const int RES_LEN = 2;
 
-    if(serverConnection(host, port) == -1) {
-        return CONNECT_SERV_FAIL; //TODO: return proper error code
+    if (serverConnection(host, port) == -1) {
+        return CONNECT_SERV_FAIL; // TODO: return proper error code
     }
 
     size_t buflen = 0;
     uint8_t buf[REQ_MAXLEN];
 
-    //VERSION
+    // VERSION
     buf[buflen] = SHOES_VER;
     buflen += sizeof(uint8_t);
 
-    //ULEN
+    // ULEN
     uint8_t ulen = strlen(user->name);
     buf[buflen] = ulen;
     buflen += sizeof(uint8_t);
 
-    //UNAME
+    // UNAME
     strncpy((char*)&buf[buflen], user->name, ulen);
     buflen += ulen;
 
-    //PLEN
+    // PLEN
     uint8_t plen = strlen(user->pass);
     buf[buflen] = plen;
     buflen += sizeof(uint8_t);
 
-    //PASSWD
+    // PASSWD
     strncpy((char*)&buf[buflen], user->pass, plen);
     buflen += plen;
 
-    if(send(conn.fd, buf, buflen, 0) == -1) {
+    if (send(conn.fd, buf, buflen, 0) == -1) {
         perror("Handshake send error");
-        return CONNECT_SERV_FAIL; //TODO
+        return CONNECT_SERV_FAIL; // TODO
     }
 
-    //Wait full response
-    if((recv(conn.fd, buf, RES_LEN, MSG_WAITALL)) < RES_LEN) {
+    // Wait full response
+    if ((recv(conn.fd, buf, RES_LEN, MSG_WAITALL)) < RES_LEN) {
         perror("Handshake recv error");
-        return CONNECT_SERV_FAIL; //TODO
+        return CONNECT_SERV_FAIL; // TODO
     }
 
     uint8_t serv_ver = (uint8_t)buf[0];
     uint8_t serv_ret = (uint8_t)buf[1];
 
-    if(*(uint8_t*)buf != SHOES_VER) {
+    if (*(uint8_t*)buf != SHOES_VER) {
         fprintf(stderr, "Invalid server shoes version: %d\n", serv_ver);
         return CONNECT_SERV_FAIL;
     }
@@ -110,25 +110,18 @@ shoesConnectStatus shoesConnect(const char* host, const char* port,
     return serv_ret;
 }
 
-static int sendRequest(shoesFamily fmly, uint8_t cmd, void* data, size_t dataLen) {
-    size_t buflen = 0;
-    uint8_t buf[dataLen + 2];
+static int sendRequest(shoesFamily fmly, uint8_t cmd, void* data,
+                       size_t dataLen) {
+    uint8_t bufLen = dataLen + 2;
+    uint8_t buf[bufLen];
 
-    //FMLY
-    buf[buflen] = (uint8_t)fmly;
-    buflen += sizeof(uint8_t);
+    buf[0] = (uint8_t)fmly;
+    buf[1] = (uint8_t)cmd;
+    memcpy(&buf[2], data, dataLen);
 
-    //CMD
-    buf[buflen] = (uint8_t)cmd;
-    buflen += sizeof(uint8_t);
-
-    //DATA
-    memcpy(&buf[buflen], data, dataLen);
-    buflen += dataLen;
-
-    if(send(conn.fd, buf, buflen, 0) == -1) {
-        perror("Handshake send error");
-        return -1; //TODO
+    if (send(conn.fd, buf, bufLen, 0) == -1) {
+        perror("Request send error");
+        return -1; // TODO
     }
 
     return 0;
@@ -145,8 +138,8 @@ static inline int sendPutRequest(uint8_t cmd, void* data, size_t dataLen) {
 static uint8_t getResponseStatus() {
     uint8_t res_status = -1;
 
-    if(recv(conn.fd, &res_status, 1, MSG_WAITALL) != 1) {
-        return -1; //TODO
+    if (recv(conn.fd, &res_status, 1, MSG_WAITALL) != 1) {
+        return -1; // TODO
     }
 
     return res_status;
@@ -155,20 +148,20 @@ static uint8_t getResponseStatus() {
 shoesResponseStatus shoesGetMetrics(shoesServerMetrics* metrics) {
     const int RES_LEN = 13;
 
-    if(sendGetRequest(CMD_METRICS) == -1) {
+    if (sendGetRequest(CMD_METRICS) == -1) {
         fprintf(stderr, "Metrics request error\n");
-        return -1; //TODO
+        return -1; // TODO
     }
 
     uint8_t status;
-    if((status = getResponseStatus()) != RESPONSE_SUCCESS) {
+    if ((status = getResponseStatus()) != RESPONSE_SUCCESS) {
         return status;
     }
 
     uint8_t buf[RES_LEN];
-    if(recv(conn.fd, buf, RES_LEN - 1, MSG_WAITALL) < RES_LEN) {
+    if (recv(conn.fd, buf, RES_LEN - 1, MSG_WAITALL) < RES_LEN) {
         perror("Metrics recv error");
-        return -1; //TODO
+        return -1; // TODO
     }
 
     metrics->historicConnections = *(uint32_t*)&buf[1];
@@ -179,42 +172,43 @@ shoesResponseStatus shoesGetMetrics(shoesServerMetrics* metrics) {
 }
 
 shoesResponseStatus shoesGetUserList(shoesUserList* list) {
-    if(sendGetRequest(CMD_LIST_USERS) == -1) {
+    if (sendGetRequest(CMD_LIST_USERS) == -1) {
         fprintf(stderr, "Metrics request error\n");
-        return -1; //TODO
+        return -1; // TODO
     }
 
     uint8_t status;
-    if((status = getResponseStatus()) != RESPONSE_SUCCESS) {
+    if ((status = getResponseStatus()) != RESPONSE_SUCCESS) {
         return status;
     }
 
     uint16_t ulen;
-    if(recv(conn.fd, &ulen, sizeof(uint16_t), MSG_WAITALL) != sizeof(uint16_t)) {
+    if (recv(conn.fd, &ulen, sizeof(uint16_t), MSG_WAITALL) !=
+        sizeof(uint16_t)) {
         perror("Userlist recv error");
-        return -1; //TODO
+        return -1; // TODO
     }
 
     char* usersBuf = malloc(ulen);
-    if(usersBuf == NULL) {
+    if (usersBuf == NULL) {
         fprintf(stderr, "Out of memory.\n");
-        return -1; //TODO
+        return -1; // TODO
     }
 
-    if(recv(conn.fd, usersBuf, ulen, MSG_WAITALL) < ulen) {
+    if (recv(conn.fd, usersBuf, ulen, MSG_WAITALL) < ulen) {
         perror("Userlist recv error");
-        return -1; //TODO
+        return -1; // TODO
     }
 
     list->users = malloc(ulen * sizeof(char**));
-    if(list->users == NULL) {
+    if (list->users == NULL) {
         fprintf(stderr, "Out of memory.\n");
-        return -1; //TODO
+        return -1; // TODO
     }
 
     list->n = 0;
-    for(int i = 0; i < ulen; i++) {
-        if(i == 0 || usersBuf[i-1] == 0)
+    for (int i = 0; i < ulen; i++) {
+        if (i == 0 || usersBuf[i - 1] == 0)
             list->users[list->n++] = &usersBuf[i];
     }
 
@@ -223,16 +217,16 @@ shoesResponseStatus shoesGetUserList(shoesUserList* list) {
     return status;
 }
 
-shoesResponseStatus shoesGetSpoofingStatus(bool* status){
+shoesResponseStatus shoesGetSpoofingStatus(bool* status) {
     uint8_t res_status;
-    if((res_status = getResponseStatus()) != RESPONSE_SUCCESS) {
+    if ((res_status = getResponseStatus()) != RESPONSE_SUCCESS) {
         return res_status;
     }
 
     uint8_t res;
-    if(recv(conn.fd, &res, 1, MSG_WAITALL) < 1) {
+    if (recv(conn.fd, &res, 1, MSG_WAITALL) < 1) {
         perror("Spoofing get recv error");
-        return -1; //TODO
+        return -1; // TODO
     }
 
     *status = (bool)res;
@@ -240,30 +234,33 @@ shoesResponseStatus shoesGetSpoofingStatus(bool* status){
     return res_status;
 }
 
-shoesResponseStatus shoesAddUser(const shoesUser* user) {
+static inline shoesResponseStatus shoesAddOrEditUser(const shoesUser* user,
+                                                     shoesPutCommand cmd) {
     size_t ulen = strlen(user->name);
     size_t plen = strlen(user->pass);
-    size_t dataLen = ulen + plen + 2;
+    uint8_t dataLen = ulen + plen + 2;
     uint8_t data[dataLen];
 
-    data[dataLen] = (uint8_t)ulen;
-    dataLen += sizeof(uint8_t);
+    data[0] = (uint8_t)ulen;
+    strcpy((char*)&data[1], user->name);
 
-    strcpy((char*)&data[dataLen], user->name);
-    dataLen += ulen;
+    data[1 + ulen] = (uint8_t)plen;
+    strcpy((char*)&data[2 + ulen], user->pass);
 
-    data[dataLen] = (uint8_t)plen;
-    dataLen += sizeof(uint8_t);
-
-    strcpy((char*)&data[dataLen], user->pass);
-    dataLen += plen;
-
-    if(sendPutRequest(CMD_ADD_USER, data, dataLen) == -1) {
-        fprintf(stderr,"Add user request error\n");
+    if (sendPutRequest(cmd, data, dataLen) == -1) {
+        fprintf(stderr, "Add user request error\n");
         return -1;
     }
 
     return getResponseStatus();
+}
+
+shoesResponseStatus shoesAddUser(const shoesUser* user) {
+    return shoesAddOrEditUser(user, CMD_ADD_USER);
+}
+
+shoesResponseStatus shoesEditUser(const shoesUser* user) {
+    return shoesAddOrEditUser(user, CMD_EDIT_USER);
 }
 
 shoesResponseStatus shoesRemoveUser(const char* user) {
@@ -271,27 +268,20 @@ shoesResponseStatus shoesRemoveUser(const char* user) {
     size_t dataLen = ulen + 2;
     uint8_t data[dataLen];
 
-    data[dataLen] = (uint8_t)ulen;
-    dataLen += sizeof(uint8_t);
+    data[0] = (uint8_t)ulen;
+    strcpy((char*)&data[1], user);
 
-    strcpy((char*)&data[dataLen], user);
-    dataLen += ulen;
-
-    if(sendPutRequest(CMD_REMOVE_USER, data, dataLen) == -1) {
-        fprintf(stderr,"Remove user request error\n");
+    if (sendPutRequest(CMD_REMOVE_USER, data, dataLen) == -1) {
+        fprintf(stderr, "Remove user request error\n");
         return -1;
     }
 
     return getResponseStatus();
 }
 
-inline shoesResponseStatus shoesEditUser(const shoesUser* user) {
-    return shoesAddUser(user);
-}
-
 shoesResponseStatus shoesModifyBufferSize(uint32_t size) {
-    if(sendPutRequest(CMD_MODIFY_BUFFER, &size, sizeof(uint32_t)) == -1) {
-        fprintf(stderr,"Modify buffer request error\n");
+    if (sendPutRequest(CMD_MODIFY_BUFFER, &size, sizeof(uint32_t)) == -1) {
+        fprintf(stderr, "Modify buffer request error\n");
         return -1;
     }
 
@@ -299,8 +289,8 @@ shoesResponseStatus shoesModifyBufferSize(uint32_t size) {
 }
 
 shoesResponseStatus shoesModifyPasswordSpoofingStatus(bool newStatus) {
-    if(sendPutRequest(CMD_MODIFY_SPOOF, &newStatus, sizeof(bool)) == -1) {
-        fprintf(stderr,"Modify spoofing request error\n");
+    if (sendPutRequest(CMD_MODIFY_SPOOF, &newStatus, sizeof(bool)) == -1) {
+        fprintf(stderr, "Modify spoofing request error\n");
         return -1;
     }
 
