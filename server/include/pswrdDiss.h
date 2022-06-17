@@ -44,6 +44,6 @@ void skip_pop3_check(struct pop3_parser *parser);
 enum pop3State check_pop3(buffer *buf, struct pop3_parser *parser);
 
 // checks if the client sends a user or pass pop3 command and saves the argument
-enum pop3State check_pop3_client(buffer *buf, struct pop3_parser *parser);
+enum pop3State pop3_parse(buffer *buf, struct pop3_parser *parser);
 
 bool do_pop3(enum pop3State state);

@@ -47,7 +47,7 @@ enum pop3State check_pop3(buffer *buf, struct pop3_parser *parser) {
     return parser->state;
 }
 
-static enum pop3State check_pop3_client_byte(struct pop3_parser *parser, uint8_t byte) {
+static enum pop3State pop3_parse_byte(struct pop3_parser *parser, uint8_t byte) {
     switch (parser->state) {
         case POP3_USER_COMMAND:
             if (byte == '\n' && parser->remaining == 5) {
@@ -131,7 +131,7 @@ bool do_pop3(enum pop3State state) {
     return state != POP3_DONE && state != POP3_ERROR && state != POP3_GREETING;
 }
 
-enum pop3State check_pop3_client(buffer *buf, struct pop3_parser *parser) {
+enum pop3State pop3_parse(buffer *buf, struct pop3_parser *parser) {
     size_t n;
     uint8_t *buf_ptr = buffer_read_ptr(buf, &n);
 
@@ -145,7 +145,7 @@ enum pop3State check_pop3_client(buffer *buf, struct pop3_parser *parser) {
         // if theres an error with the line, ignore it
         if (state == POP3_ERROR && *buf_ptr != '\n') continue;
 
-        state = check_pop3_client_byte(parser, *buf_ptr);
+        state = pop3_parse_byte(parser, *buf_ptr);
 
         if (state == POP3_DONE) return state;
     }

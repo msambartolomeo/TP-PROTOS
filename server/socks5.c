@@ -444,7 +444,8 @@ static void copy_init(unsigned state, struct selector_key *key) {
 
     pop3_parser_init(&conn->pop3);
     if (ntohs(conn->parser.request.request.port) == 110) {
-//        skip_pop3_check(&conn->pop3);
+        // if the port is POP3's default port, we can skip the origin check to see if it's a POP3 server
+        skip_pop3_check(&conn->pop3);
     }
 }
 
@@ -483,7 +484,7 @@ static unsigned copy_read(struct selector_key *key) {
 
     if (key->fd == conn->client_socket) {
         if (do_pop3(conn->pop3.state)) {
-            if (check_pop3_client(c->wb, &conn->pop3) == POP3_DONE) {
+            if (pop3_parse(c->wb, &conn->pop3) == POP3_DONE) {
                 // TODO agregar fecha en formato ISO-8601
                 // TODO agregar user que se conecta
                 // TODO agregar ip de origin (parche de coda hace parseo de binario a humano)
