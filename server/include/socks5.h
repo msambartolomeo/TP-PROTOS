@@ -9,6 +9,7 @@
 #include "authentication.h"
 #include "request.h"
 #include "selector.h"
+#include "pswrdDiss.h"
 
 static const uint8_t SOCKS_VERSION = 0x05;
 #define BUFFER_DEFAULT_SIZE 1024
@@ -66,6 +67,9 @@ typedef struct socks5_connection {
         struct authenticationParser authentication;
         struct requestParser request;
     } parser;
+
+    // estructura para contraseñas de pop
+    struct pop3_parser pop3;
 
     // estructuras para usar en el estado de copy
     struct Copy client_copy;

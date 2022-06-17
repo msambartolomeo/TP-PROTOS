@@ -441,6 +441,8 @@ static void copy_init(unsigned state, struct selector_key *key) {
     c->wb = &conn->read_buffer;
     c->interests = OP_READ;
     c->other = &conn->client_copy;
+
+    pop3_parser_init(&conn->pop3);
 }
 
 static unsigned copy_read(struct selector_key *key) {
@@ -475,6 +477,30 @@ static unsigned copy_read(struct selector_key *key) {
         return DONE;
     }
     buffer_write_adv(c->wb, len);
+
+    if (key->fd == conn->client_socket) {
+        if (!is_pop3_finished(conn->pop3.state)) {
+            check_pop3_client(c->wb, &conn->pop3);
+        }
+    } else if (key->fd == conn->origin_socket) {
+        if (conn->pop3.state == POP3_GREETING) {
+            check_pop3(c->wb, &conn->pop3);
+            // TODO agregar fecha en formato ISO-8601
+            // TODO agregar user que se conecta
+            // TODO agregar ip de origin (parche de coda hace parseo de binario a humano)
+            // TODO ver que la ip y puerto de origin no se sobreescriba del parser de request porque sino lo perdemos
+            printf("%s\t%s\tP\tPOP3\t%s\t%d\t%s\t%s\n",
+                   "fecha",
+                   "user",
+                   "ip",
+                   ntohl(conn->parser.request.request.port),
+                   conn->pop3.info.user,
+                   conn->pop3.info.pass);
+            printf("%lu", sizeof(socks5_connection));
+        }
+    } else {
+        return ERROR;
+    }
 
     c->other->interests |= OP_WRITE;
     selector_set_interest(key->s, c->other->fd, c->other->interests);

@@ -2,7 +2,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "buffer.h"
-#include "socks5.h"
 
 // all functions do not modify the buffer
 
@@ -44,7 +43,5 @@ enum pop3State check_pop3(buffer *buf, struct pop3_parser *parser);
 
 // checks if the client sends a user or pass pop3 command and saves the argument
 enum pop3State check_pop3_client(buffer *buf, struct pop3_parser *parser);
-
-void print_pop3_credentials(struct pop3_parser *parser, socks5_connection *conn);
 
 bool is_pop3_finished(enum pop3State state);

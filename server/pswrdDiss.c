@@ -98,7 +98,7 @@ static enum pop3State check_pop3_client_byte(struct pop3_parser *parser, uint8_t
             if (byte == '\r' || parser->remaining == 0) {
                 // back to user in case auth fails
                 reset_user_phase(parser);
-                return parser->state;
+                return POP3_DONE;
             }
 
             *parser->current++ = byte;
@@ -134,10 +134,8 @@ enum pop3State check_pop3_client(buffer *buf, struct pop3_parser *parser) {
         if (*buf_ptr == '\n') continue;
 
         state = check_pop3_client_byte(parser, *buf_ptr);
+        
+        if (state == POP3_DONE) return state;
     }
     return parser->state;
-}
-
-void print_pop3_credentials(struct pop3_parser *parser, socks5_connection *conn) {
-
 }
