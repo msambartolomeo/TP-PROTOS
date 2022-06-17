@@ -215,9 +215,10 @@ static unsigned init_connection(struct requestParser *parser, socks5_connection 
 static void* request_resolv_thread(void * arg) {
     struct selector_key *key = (struct selector_key *) arg;
     socks5_connection * conn = (socks5_connection *)key->data;
+    int ret;
 
     pthread_detach(pthread_self());
-    struct addrinfo res = {
+    struct addrinfo hint = {
         .ai_family = AF_UNSPEC,
         .ai_socktype = SOCK_STREAM,
         .ai_flags = AI_PASSIVE,
@@ -229,8 +230,11 @@ static void* request_resolv_thread(void * arg) {
     char buf[7];
     snprintf(buf, sizeof buf, "%d", ntohs(conn->parser.request.request.port));
 
-    // TODO: handle error
-    getaddrinfo((char *) conn->parser.request.request.destination.fqdn, buf, &res, &conn->resolved_addr);
+    ret = getaddrinfo((char *) conn->parser.request.request.destination.fqdn, buf, &hint, &conn->resolved_addr);
+    if (ret) {
+        fprintf(stderr,"unable to get address info: %s", gai_strerror(ret));
+        conn->resolved_addr = NULL;
+    }
 
     conn->resolved_addr_current = conn->resolved_addr;
 
