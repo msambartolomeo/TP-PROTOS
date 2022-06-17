@@ -24,13 +24,10 @@ static void reset_pass_phase(struct pop3_parser *parser) {
     parser->current = parser->buff;
 }
 
-enum pop3State check_pop3(buffer *buf, struct pop3_parser *parser) {
+enum pop3State check_pop3(uint8_t *buf_ptr, ssize_t n, struct pop3_parser *parser) {
     if (parser->state != POP3_GREETING) {
         return POP3_ERROR;
     }
-
-    size_t n;
-    uint8_t *buf_ptr = buffer_read_ptr(buf, &n);
 
     for (; n > 0 && parser->remaining > 0; n--, parser->remaining--) {
         *parser->current++ = *buf_ptr++;
@@ -101,6 +98,10 @@ static enum pop3State pop3_parse_byte(struct pop3_parser *parser, uint8_t byte) 
                     parser->remaining = POP3_ARGUMENT_LENGTH - 1;
                     parser->current = parser->info.pass;
                     parser->state = POP3_PASS;
+                } else if (strncmp((char *) parser->buff,"USER ", 5) == 0) {
+                    parser->remaining = POP3_ARGUMENT_LENGTH - 1;
+                    parser->current = parser->info.user;
+                    parser->state = POP3_USER;
                 } else {
                     reset_pass_phase(parser);
                     return POP3_ERROR;
@@ -131,17 +132,14 @@ bool do_pop3(enum pop3State state) {
     return state != POP3_DONE && state != POP3_ERROR && state != POP3_GREETING;
 }
 
-enum pop3State pop3_parse(buffer *buf, struct pop3_parser *parser) {
-    size_t n;
-    uint8_t *buf_ptr = buffer_read_ptr(buf, &n);
-
+enum pop3State pop3_parse(uint8_t *buf_ptr, ssize_t *n, struct pop3_parser *parser) {
     enum pop3State state = parser->state;
 
     if (!do_pop3(state)) {
         return state;
     }
 
-    for (; n > 0; n--, buf_ptr++) {
+    for (; *n > 0; *n = *n - 1, buf_ptr++) {
         // if theres an error with the line, ignore it
         if (state == POP3_ERROR && *buf_ptr != '\n') continue;
 
@@ -149,5 +147,15 @@ enum pop3State pop3_parse(buffer *buf, struct pop3_parser *parser) {
 
         if (state == POP3_DONE) return state;
     }
+
+    if (*n > 0 && *buf_ptr == '\r') {
+        *n = *n - 1;
+        buf_ptr++;
+    }
+    if (*n > 0 && *buf_ptr == '\n') {
+        *n = *n - 1;
+        buf_ptr++;
+    }
+
     return parser->state;
 }

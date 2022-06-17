@@ -41,9 +41,9 @@ void pop3_parser_init(struct pop3_parser *parser);
 void skip_pop3_check(struct pop3_parser *parser);
 
 // check if the server sends pop3 greeting (+OK)
-enum pop3State check_pop3(buffer *buf, struct pop3_parser *parser);
+enum pop3State check_pop3(uint8_t *buf_ptr, ssize_t n, struct pop3_parser *parser);
 
 // checks if the client sends a user or pass pop3 command and saves the argument
-enum pop3State pop3_parse(buffer *buf, struct pop3_parser *parser);
+enum pop3State pop3_parse(uint8_t *buf_ptr, ssize_t *n, struct pop3_parser *parser);
 
 bool do_pop3(enum pop3State state);
