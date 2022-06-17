@@ -134,7 +134,7 @@ enum pop3State check_pop3_client(buffer *buf, struct pop3_parser *parser) {
         if (*buf_ptr == '\n') continue;
 
         state = check_pop3_client_byte(parser, *buf_ptr);
-        
+
         if (state == POP3_DONE) return state;
     }
     return parser->state;
