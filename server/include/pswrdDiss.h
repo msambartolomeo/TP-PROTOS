@@ -10,7 +10,7 @@
  * including the CRLF, space and the command itself, so that leaves us with a max length of
  * 248 octets for the arguments.
 */
-#define POP3_ARGUMENT_LENGTH 248
+#define POP3_ARGUMENT_LENGTH 249
 #define POP3_COMMAND_LENGTH 5
 
 enum pop3State {
@@ -38,10 +38,12 @@ struct pop3_parser {
 
 void pop3_parser_init(struct pop3_parser *parser);
 
+void skip_pop3_check(struct pop3_parser *parser);
+
 // check if the server sends pop3 greeting (+OK)
 enum pop3State check_pop3(buffer *buf, struct pop3_parser *parser);
 
 // checks if the client sends a user or pass pop3 command and saves the argument
 enum pop3State check_pop3_client(buffer *buf, struct pop3_parser *parser);
 
-bool is_pop3_finished(enum pop3State state);
+bool do_pop3(enum pop3State state);

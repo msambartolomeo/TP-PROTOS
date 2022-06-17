@@ -443,6 +443,9 @@ static void copy_init(unsigned state, struct selector_key *key) {
     c->other = &conn->client_copy;
 
     pop3_parser_init(&conn->pop3);
+    if (ntohs(conn->parser.request.request.port) == 110) {
+//        skip_pop3_check(&conn->pop3);
+    }
 }
 
 static unsigned copy_read(struct selector_key *key) {
@@ -479,14 +482,14 @@ static unsigned copy_read(struct selector_key *key) {
     buffer_write_adv(c->wb, len);
 
     if (key->fd == conn->client_socket) {
-        if (!is_pop3_finished(conn->pop3.state)) {
+        if (do_pop3(conn->pop3.state)) {
             if (check_pop3_client(c->wb, &conn->pop3) == POP3_DONE) {
                 // TODO agregar fecha en formato ISO-8601
                 // TODO agregar user que se conecta
                 // TODO agregar ip de origin (parche de coda hace parseo de binario a humano)
                 // TODO ver que la ip y puerto de origin no se sobreescriba del parser de request porque sino lo perdemos
-                printf("%s\t%s\tP\tPOP3\t%s\t%d\t%s\t%s\n", "fecha", "user", "ip",
-                       ntohl(conn->parser.request.request.port), conn->pop3.info.user, conn->pop3.info.pass);
+                printf("%s\t%s\tP\tPOP3\t%s\t%hu\t%s\t%s\n", "fecha", "user", "ip",
+                       ntohs(conn->parser.request.request.port), conn->pop3.info.user, conn->pop3.info.pass);
             }
         }
     } else if (key->fd == conn->origin_socket) {

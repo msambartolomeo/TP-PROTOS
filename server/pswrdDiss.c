@@ -14,6 +14,10 @@ static void reset_user_phase(struct pop3_parser *parser) {
     parser->current = parser->buff;
 }
 
+void skip_pop3_check(struct pop3_parser *parser) {
+    reset_user_phase(parser);
+}
+
 static void reset_pass_phase(struct pop3_parser *parser) {
     parser->state = POP3_PASS_COMMAND;
     parser->remaining = 5;
@@ -28,7 +32,7 @@ enum pop3State check_pop3(buffer *buf, struct pop3_parser *parser) {
     size_t n;
     uint8_t *buf_ptr = buffer_read_ptr(buf, &n);
 
-    while (n-- > 0 && parser->remaining-- > 0) {
+    for (; n > 0 && parser->remaining > 0; n--, parser->remaining--) {
         *parser->current++ = *buf_ptr++;
     }
 
@@ -46,7 +50,11 @@ enum pop3State check_pop3(buffer *buf, struct pop3_parser *parser) {
 static enum pop3State check_pop3_client_byte(struct pop3_parser *parser, uint8_t byte) {
     switch (parser->state) {
         case POP3_USER_COMMAND:
-            if (byte == '\r') {
+            if (byte == '\n' && parser->remaining == 5) {
+                // ignore \n if the user was using CRLF
+                break ;
+            }
+            if (byte == '\r' || byte == '\n') {
                 reset_user_phase(parser);
                 return parser->state;
             }
@@ -56,7 +64,7 @@ static enum pop3State check_pop3_client_byte(struct pop3_parser *parser, uint8_t
 
             if (parser->remaining == 0) {
                 if (strncmp((char *) parser->buff, "USER ", 5) == 0) {
-                    parser->remaining = POP3_ARGUMENT_LENGTH;
+                    parser->remaining = POP3_ARGUMENT_LENGTH - 1;
                     parser->current = parser->info.user;
                     parser->state = POP3_USER;
                 } else {
@@ -66,7 +74,8 @@ static enum pop3State check_pop3_client_byte(struct pop3_parser *parser, uint8_t
             }
             break;
         case POP3_USER:
-            if (byte == '\r' || parser->remaining == 0) {
+            if (byte == '\r' || byte == '\n' || parser->remaining == 0) {
+                *parser->current = 0;
                 reset_pass_phase(parser);
                 return parser->state;
             }
@@ -75,7 +84,11 @@ static enum pop3State check_pop3_client_byte(struct pop3_parser *parser, uint8_t
             parser->remaining--;
             break;
         case POP3_PASS_COMMAND:
-            if (byte == '\r') {
+            if (byte == '\n' && parser->remaining == 5) {
+                // ignore \n if the user was using CRLF
+                break ;
+            }
+            if (byte == '\r' || byte == '\n') {
                 reset_pass_phase(parser);
                 return parser->state;
             }
@@ -85,7 +98,7 @@ static enum pop3State check_pop3_client_byte(struct pop3_parser *parser, uint8_t
 
             if (parser->remaining == 0) {
                 if (strncmp((char *) parser->buff, "PASS ", 5) == 0) {
-                    parser->remaining = POP3_ARGUMENT_LENGTH;
+                    parser->remaining = POP3_ARGUMENT_LENGTH - 1;
                     parser->current = parser->info.pass;
                     parser->state = POP3_PASS;
                 } else {
@@ -95,7 +108,8 @@ static enum pop3State check_pop3_client_byte(struct pop3_parser *parser, uint8_t
             }
             break;
         case POP3_PASS:
-            if (byte == '\r' || parser->remaining == 0) {
+            if (byte == '\r' || byte == '\n' || parser->remaining == 0) {
+                *parser->current = 0;
                 // back to user in case auth fails
                 reset_user_phase(parser);
                 return POP3_DONE;
@@ -113,8 +127,8 @@ static enum pop3State check_pop3_client_byte(struct pop3_parser *parser, uint8_t
     return parser->state;
 }
 
-bool is_pop3_finished(enum pop3State state) {
-    return state == POP3_DONE || state == POP3_ERROR;
+bool do_pop3(enum pop3State state) {
+    return state != POP3_DONE && state != POP3_ERROR && state != POP3_GREETING;
 }
 
 enum pop3State check_pop3_client(buffer *buf, struct pop3_parser *parser) {
@@ -123,15 +137,13 @@ enum pop3State check_pop3_client(buffer *buf, struct pop3_parser *parser) {
 
     enum pop3State state = parser->state;
 
-    if (is_pop3_finished(state)) {
+    if (!do_pop3(state)) {
         return state;
     }
 
     for (; n > 0; n--, buf_ptr++) {
         // if theres an error with the line, ignore it
         if (state == POP3_ERROR && *buf_ptr != '\n') continue;
-        // always ignore the end of line
-        if (*buf_ptr == '\n') continue;
 
         state = check_pop3_client_byte(parser, *buf_ptr);
 
