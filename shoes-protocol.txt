@@ -26,7 +26,7 @@ SHOES Protocol Version 1.0
 
     Once the SHOES V1 server has started, and the client has selected the
     Username/Password Authentication protocol, the Username/Password
-    subnegotiation begins.  This begins with the client producing a
+    negotiation begins.  This begins with the client producing a
     Username/Password request:
 
             +-----+------+----------+------+----------+
@@ -66,7 +66,7 @@ SHOES Protocol Version 1.0
 
 3 Requests
 
-    Once the autherization process has concluded, the client sends the
+    Once the authorization process has concluded, the client sends the
     request details.
 
     The SHOES request is formed as follows:
@@ -81,7 +81,7 @@ SHOES Protocol Version 1.0
               o  FMLY   Family of the request.
                  o  GET Requests X'00'
                  o  PUT Requests X'01'
-              o  CMD    Identifies the command to be executed whithin
+              o  CMD    Identifies the command to be executed within
               the family specified.
               o  DATA   Contains the command specific data. Further details
               can be found in the following sections.
@@ -123,7 +123,7 @@ SHOES Protocol Version 1.0
                 o X'03' MODIFY BUFFER SIZE
                 o X'04' MODIFY PASSWORD SPOOFING STATUS
 
-        The requets formats are as follows:
+        The requests formats are as follows:
 
         3.2.1 ADD USER
             +---------+---------+------+----------+------+----------+
@@ -195,7 +195,7 @@ SHOES Protocol Version 1.0
 
 4 Responses
 
-    As stated previoulsy, the server will return a different format
+    As stated previous, the server will return a different format
     depending on the command that was requested. The following sections
     go into greater details on how the replies are formed.
 
@@ -240,14 +240,14 @@ SHOES Protocol Version 1.0
 
     The server will return the following reply:
 
-                +--------+--------+----------+
-                | STATUS | UCOUNT |  USERS   |
-                +--------+--------+----------+
-                |   1    |   4    | Variable |
-                +--------+--------+----------+
+                +--------+------+----------+
+                | STATUS | ULEN |  USERS   |
+                +--------+------+----------+
+                |   1    |  4   | Variable |
+                +--------+------+----------+
     Where:
             o STATUS    Status of the request.
-            o UCOUNT    
+            o ULEN      Length of the USERS field.
             o USERS     List of users.
 
     The USERS field is a list of usernames in ISO/IEC 8859-1:1998 character
@@ -268,7 +268,7 @@ SHOES Protocol Version 1.0
             o STATUS    Status of the request.
             o SPOOF     Password spoofing status.
 
-    The field SPOOF contains one octect, which is either X'00' or X'01',
+    The field SPOOF contains one octet, which is either X'00' or X'01',
     representing the password spoofing status as disabled or enabled,
     respectively.
 
