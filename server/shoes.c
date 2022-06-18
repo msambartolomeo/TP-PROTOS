@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <memory.h>
 #include "shoes.h"
+#include "users.h"
 
 // SHOES_AUTHENTICATION_READ
 static unsigned authentication_read(struct selector_key *key) {
@@ -30,16 +31,33 @@ static unsigned authentication_read(struct selector_key *key) {
 
     if (done) {
         // TODO: authenticate user in SHOES
-        shoesResponse response;
-        response.status = 1;
-        response.dataLen = 1;
-        response.data = &(uint8_t){0}; //TODO
-        if ((SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE))
-            || !writeResponse(&conn->write_buffer, &response)) {
+        uint8_t authStatus = authenticate_shoes_user(&parser->credentials) == AUTHENTICATION_STATUS_OK ? 0x00 : 0x03;
+        if(authStatus == RESPONSE_SUCCESS) {
+            conn->isAuthenticated = true;
+        }
+
+        if(!buffer_can_write(&conn->write_buffer)) {
             return SHOES_ERROR;
         }
+
+        size_t nBuf;
+        uint8_t* bufPtr = buffer_write_ptr(&conn->write_buffer, &nBuf);
+
+        if(nBuf < 2) {
+            return SHOES_ERROR;
+        }
+
+        bufPtr[0] = 1;
+        bufPtr[1] = authStatus;
+        buffer_write_adv(&conn->write_buffer, 2);
+        
+        if ((SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE))) {
+            return SHOES_ERROR;
+        }
+
+        return SHOES_AUTHENTICATION_WRITE;
     }
-    return SHOES_AUTHENTICATION_WRITE;
+    return SHOES_AUTHENTICATION_READ;
 }
 
 // SHOES_AUTHENTICATION_WRITE
@@ -58,7 +76,12 @@ static unsigned authentication_write(struct selector_key *key) {
         if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_READ)) {
             return SHOES_ERROR;
         }
-        return SHOES_REQUEST_READ;
+
+        if(conn->isAuthenticated) {
+            return SHOES_REQUEST_READ;
+        }
+
+        return SHOES_AUTHENTICATION_READ;
     }
     return SHOES_AUTHENTICATION_WRITE;
 }

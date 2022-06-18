@@ -32,7 +32,7 @@ static void shoes_parse_add_edit_user(shoesParser * parser, uint8_t byte) {
     switch (parser->putParser.addEditUserParser.state) {
         case PARSE_ADD_EDIT_USER_ULEN:
             if (byte == 0) {
-                parser->response.status = RESPONSE_CMD_FAIL;
+                parser->response.status = RESPONSE_CMD_FAIL_1;
                 parser->state = PARSE_DONE;
                 break;
             }
@@ -44,14 +44,14 @@ static void shoes_parse_add_edit_user(shoesParser * parser, uint8_t byte) {
         case PARSE_ADD_EDIT_USER_USER:
             *(parser->putParser.addEditUserParser.pointer++) = byte;
             parser->putParser.addEditUserParser.remaining--;
-            if (parser->putParser.addEditUserParser.remaining == 0) {
+            if (parser->putParser.addEditUserParser.remaining <= 0) {
                 parser->putParser.addEditUserParser.state =
                     PARSE_ADD_EDIT_USER_PLEN;
             }
             break;
         case PARSE_ADD_EDIT_USER_PLEN:
             if (byte == 0) {
-                parser->response.status = RESPONSE_CMD_FAIL;
+                parser->response.status = RESPONSE_CMD_FAIL_1;
                 parser->state = PARSE_DONE;
                 break;
             }
@@ -63,7 +63,7 @@ static void shoes_parse_add_edit_user(shoesParser * parser, uint8_t byte) {
         case PARSE_ADD_EDIT_USER_PASS:
             *(parser->putParser.addEditUserParser.pointer++) = byte;
             parser->putParser.addEditUserParser.remaining--;
-            if (parser->putParser.addEditUserParser.remaining == 0) {
+            if (parser->putParser.addEditUserParser.remaining <= 0) {
                 // TODO: Add/Edit user
                 printf("Added user '%s' with pass '%s'\n",
                        parser->putParser.addEditUserParser.username,
@@ -78,7 +78,7 @@ static void shoes_parse_remove_user(shoesParser * parser, uint8_t byte) {
     switch (parser->putParser.removeUserParser.state) {
         case PARSE_REMOVE_USER_ULEN:
             if (byte == 0) {
-                parser->response.status = RESPONSE_CMD_FAIL;
+                parser->response.status = RESPONSE_CMD_FAIL_1;
                 parser->state =  PARSE_DONE;
                 break;
             }
@@ -89,7 +89,7 @@ static void shoes_parse_remove_user(shoesParser * parser, uint8_t byte) {
         case PARSE_REMOVE_USER_USER:
             *(parser->putParser.removeUserParser.pointer++) = byte;
             parser->putParser.removeUserParser.remaining--;
-            if (parser->putParser.removeUserParser.remaining == 0) {
+            if (parser->putParser.removeUserParser.remaining <= 0) {
                 // TODO: Remove user and check for errors
                 // TODO: Send status 0x00 if no errors, 0x04 if errors
 
@@ -117,7 +117,7 @@ static void shoes_parse_modify_buffer(shoesParser * parser, uint8_t byte) {
 
 static void shoes_parse_modify_spoof(shoesParser * parser, uint8_t byte) {
     if (byte != false && byte != true) {
-        parser->response.status = RESPONSE_CMD_FAIL; //TODO: Better status
+        parser->response.status = RESPONSE_CMD_FAIL_1; //TODO: Better status
     } else {
         // TODO: Actually modify spoofing status
         parser->response.status = RESPONSE_SUCCESS;

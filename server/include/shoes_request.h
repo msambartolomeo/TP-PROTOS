@@ -82,7 +82,7 @@ typedef enum shoesResponseStatus {
     RESPONSE_SERV_FAIL = 0x01,
     RESPONSE_FMLY_NOT_SUPPORTED = 0x02,
     RESPONSE_CMD_NOT_SUPPORTED = 0x03,
-    RESPONSE_CMD_FAIL = 0x04,
+    RESPONSE_CMD_FAIL_1 = 0x04,
     RESPONSE_CMD_FAIL_SECOND = 0x05
 } shoesResponseStatus;
 

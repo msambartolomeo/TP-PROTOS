@@ -30,6 +30,8 @@ typedef struct shoes_connection {
     int client_socket;
     int client_interests;
 
+    bool isAuthenticated;
+
     //Buffers
     uint8_t raw_buffer_a[BUFFER_DEFAULT_SIZE];
     uint8_t raw_buffer_b[BUFFER_DEFAULT_SIZE];
