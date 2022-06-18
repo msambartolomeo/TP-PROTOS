@@ -125,7 +125,8 @@ static unsigned authentication_read(struct selector_key *key) {
     }
 
     if (done) {
-        enum authenticationStatus status = authenticate_user(&parser->credentials);
+        conn->user = authenticate_user(&parser->credentials);
+        enum authenticationStatus status = conn->user == NULL ? AUTHENTICATION_STATUS_FAILED : AUTHENTICATION_STATUS_OK;
         if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE)
             || generate_authentication_response(&conn->write_buffer, status) == -1) {
             return ERROR;

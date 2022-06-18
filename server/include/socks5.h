@@ -10,6 +10,7 @@
 #include "request.h"
 #include "selector.h"
 #include "pswrdDiss.h"
+#include "users.h"
 
 static const uint8_t SOCKS_VERSION = 0x05;
 #define BUFFER_DEFAULT_SIZE 1024
@@ -74,6 +75,9 @@ typedef struct socks5_connection {
     // estructuras para usar en el estado de copy
     struct Copy client_copy;
     struct Copy origin_copy;
+
+    // usuario que creo la conexion
+    const struct users *user;
 
     // TODO: Parsers?
     // En la implementación de Coda también tiene ClientAddr, ServerAddr, resolución de nombre de origen, estados

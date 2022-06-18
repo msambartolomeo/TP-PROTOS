@@ -40,6 +40,7 @@ void logger(enum logType type, socks5_connection *conn) {
     const char *destination;
     struct ip_and_port destination_ip_port;
     struct ip_and_port source_ip_port;
+    const char *user = conn->user == NULL ? "anonymous" : conn->user->name;
 
     switch (conn->parser.request.request.address_type) {
         case ADDRESS_TYPE_IPV4:
@@ -60,11 +61,11 @@ void logger(enum logType type, socks5_connection *conn) {
     switch (type) {
         case LOG_ACCESS:
             sockaddr_to_human(&source_ip_port, (struct sockaddr*) &conn->client_addr);
-            printf("%s\t%s\t%c\t%s\t%hu\t%s\t%hu\t%d\n", "fecha", "user", type, source_ip_port.ip,
+            printf("%s\t%s\t%c\t%s\t%hu\t%s\t%hu\t%d\n", "fecha", user, type, source_ip_port.ip,
                    htons(source_ip_port.port), destination, ntohs(conn->parser.request.request.port), conn->parser.request.response.status);
             break;
         case LOG_PASSWORD:
-            printf("%s\t%s\t%c\tPOP3\t%s\t%hu\t%s\t%s\n", "fecha", "user", type, destination,
+            printf("%s\t%s\t%c\tPOP3\t%s\t%hu\t%s\t%s\n", "fecha", user, type, destination,
                    ntohs(conn->parser.request.request.port), conn->pop3.info.user, conn->pop3.info.pass);
             break;
         default:

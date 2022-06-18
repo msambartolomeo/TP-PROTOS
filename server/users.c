@@ -26,18 +26,18 @@ void change_auth_state(bool required) {
     auth_required = required;
 }
 
-int compare_users(char * one, char * two) {
+int compare_users(const char * one, const char * two) {
     return strcmp(one, two) == 0;
 }
 
-enum authenticationStatus authenticate_user(authentication_credentials *credentials) {
+const struct users *authenticate_user(authentication_credentials *credentials) {
     for (int i = 0; i < nUsers; i++) {
         if (compare_users(userDatabase[i].name, (char *) credentials->username) &&
             compare_users(userDatabase[i].pass, (char *) credentials->password)) {
-            return AUTHENTICATION_STATUS_OK;
+            return &userDatabase[i];
         }
     }
-    return AUTHENTICATION_STATUS_FAILED;
+    return NULL;
 }
 
 static int find_user(char *name) {

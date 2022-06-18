@@ -4,11 +4,11 @@
 #include "args.h"
 
 struct users {
-  char *name;
-  char *pass;
+  const char *name;
+  const char *pass;
 };
 
-enum authenticationStatus authenticate_user(authentication_credentials *credentials);
+const struct users *authenticate_user(authentication_credentials *credentials);
 
 void initialize_users(struct users *users, uint8_t nusers);
 
