@@ -47,3 +47,7 @@ enum pop3State check_pop3(uint8_t *buf_ptr, ssize_t n, struct pop3_parser *parse
 enum pop3State pop3_parse(uint8_t *buf_ptr, ssize_t *n, struct pop3_parser *parser);
 
 bool do_pop3(enum pop3State state);
+
+bool dissector_is_on();
+
+void change_dissector_state(bool state);

@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <getopt.h>
 
+#include "pswrdDiss.h"
 #include "args.h"
 #include "users.h"
 
@@ -62,8 +63,6 @@ void parse_args(int argc, char* const *argv, struct socks5args *args) {
     args->shoes_addr   = NULL;
     args->shoes_port   = "8080";
 
-    args->disectors_enabled = true;
-
     int c;
 
     int nusers = 0;
@@ -83,7 +82,6 @@ void parse_args(int argc, char* const *argv, struct socks5args *args) {
                 usage(argv[0]);
                 free(users);
                 exit(0);
-                break;
             case 'l':
                 args->socks_addr = optarg;
                 break;
@@ -91,7 +89,7 @@ void parse_args(int argc, char* const *argv, struct socks5args *args) {
                 args->shoes_addr = optarg;
                 break;
             case 'N':
-                args->disectors_enabled = false;
+                change_dissector_state(false);
                 break;
             case 'p':
                 args->socks_port = port(optarg);

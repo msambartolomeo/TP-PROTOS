@@ -2,6 +2,16 @@
 #include <string.h>
 #include <ctype.h>
 
+static bool dissector_state = true;
+
+bool dissector_is_on() {
+    return dissector_state;
+}
+
+void change_dissector_state(bool state) {
+    dissector_state = state;
+}
+
 void pop3_parser_init(struct pop3_parser *parser) {
     parser->state = POP3_GREETING;
     parser->remaining = 3;

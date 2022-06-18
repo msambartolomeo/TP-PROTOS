@@ -12,8 +12,6 @@ struct socks5args {
 
     char *shoes_addr;
     char *shoes_port;
-
-    bool disectors_enabled;
 };
 
 /**
