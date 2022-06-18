@@ -62,12 +62,11 @@ static enum pop3State pop3_parse_command(struct pop3_parser *parser, uint8_t byt
     parser->remaining--;
 
     if (parser->remaining == 0) {
+        parser->remaining = POP3_ARGUMENT_LENGTH - 1;
         if (state == POP3_PASS_COMMAND && strncmp((char *) parser->buff, "PASS ", 5) == 0) {
-            parser->remaining = POP3_ARGUMENT_LENGTH - 1;
             parser->current = parser->info.pass;
             parser->state = POP3_PASS;
         } else if (strncmp((char *) parser->buff,"USER ", 5) == 0) {
-            parser->remaining = POP3_ARGUMENT_LENGTH - 1;
             parser->current = parser->info.user;
             parser->state = POP3_USER;
         } else {
