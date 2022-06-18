@@ -35,6 +35,12 @@ int main(int argc, const char **argv) {
     };
     initialize_users(users, 1);
 
+    struct users shoesUsers[MAX_USERS] = {
+        {"shoes", "shoes"}
+    };
+    initialize_shoes_users(shoesUsers, 1);
+    // TODO Properly initialize_shoes_users();
+
     int retcode = network_handler();
     network_handler_cleanup();
     return retcode;

@@ -10,6 +10,7 @@
 #include "selector.h"
 #include "users.h"
 #include "networkHandler.h"
+#include "metrics.h"
 
 // CONNECTION_READ
 static void connection_read_init(unsigned state, struct selector_key *key) {
@@ -503,6 +504,7 @@ static unsigned copy_write(struct selector_key *key) {
     }
 
     buffer_read_adv(c->rb, len);
+    bytesTransferred += len;
 
     c->other->interests |= OP_READ;
     selector_set_interest(key->s, c->other->fd, c->other->interests);

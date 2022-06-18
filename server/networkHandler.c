@@ -12,6 +12,7 @@
 #include "stm.h"
 #include "socks5.h"
 #include "shoes.h"
+#include "metrics.h"
 
 #define DEFAULT_CLIENT_PORT 1080
 #define DEFAULT_SHOES_PORT 1081
@@ -46,6 +47,7 @@ void close_connection(socks5_connection * connection)
 
     free(connection);
 
+    concurrentConnections--;
     printf("CONNECTION CLOSED\n");
 }
 
@@ -180,6 +182,8 @@ static void passive_socket_handler(struct selector_key *key)
         return;
     }
 
+    historicConnections++;
+    concurrentConnections++;
     printf("NEW CONNECTION\n");
 }
 
