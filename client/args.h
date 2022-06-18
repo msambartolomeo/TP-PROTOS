@@ -11,7 +11,6 @@ struct shoesArgs {
     struct shoesUser authUser;
 
     bool listUsers;
-    bool listCredentials; // TODO
     bool getServerMetrics;
     bool getPasswordSpoofingStatus;
 
