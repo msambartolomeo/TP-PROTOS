@@ -29,9 +29,13 @@ static unsigned authentication_read(struct selector_key *key) {
     }
 
     if (done) {
-        enum authenticationStatus status = AUTHENTICATION_STATUS_OK; // TODO: authenticate user in SHOES
+        // TODO: authenticate user in SHOES
+        shoesResponse response;
+        response.status = 1;
+        response.dataLen = 1;
+        response.data = &(uint8_t){0}; //TODO
         if ((SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE))
-            || generate_authentication_response(&conn->write_buffer, status) != -1) {
+            || !writeResponse(&conn->write_buffer, &response)) {
             return SHOES_ERROR;
         }
     }
@@ -52,11 +56,16 @@ static unsigned authentication_write(struct selector_key *key) {
     buffer_read_adv(&conn->write_buffer, len);
     if (!buffer_can_read(&conn->write_buffer)) {
         if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_READ)) {
-            return SHOES_REQUEST_READ;
+            return SHOES_ERROR;
         }
-        return SHOES_ERROR;
+        return SHOES_REQUEST_READ;
     }
     return SHOES_AUTHENTICATION_WRITE;
+}
+
+static void request_init(unsigned state, struct selector_key *key) {
+    shoes_connection *conn = (shoes_connection *) key->data;
+    memset(&conn->parser, 0, sizeof(conn->parser));
 }
 
 // SHOES_REQUEST_READ
@@ -77,7 +86,8 @@ static unsigned request_read(struct selector_key *key) {
     shoes_request_parse(parser, &conn->read_buffer);
 
     if (parser->state == PARSE_DONE) {
-        if(!writeResponse(&conn->write_buffer, &parser->response)) {
+        if(!writeResponse(&conn->write_buffer, &parser->response) ||
+            SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE)) {
             fprintf(stderr, "Buffer out of space. This error should not be reachable.\n");
             return SHOES_ERROR;
         }
@@ -100,6 +110,9 @@ static unsigned request_write(struct selector_key *key) {
     }
     buffer_read_adv(&conn->write_buffer, len);
     if (!buffer_can_read(&conn->write_buffer)) {
+        if(SELECTOR_SUCCESS != selector_set_interest_key(key, OP_READ)) {
+            return SHOES_ERROR;
+        }
         return SHOES_REQUEST_READ;
     }
 
@@ -115,6 +128,7 @@ static const struct state_definition states[] = {
                 .on_write_ready = authentication_write,
         }, {
                 .state = SHOES_REQUEST_READ,
+                .on_arrival = request_init,
                 .on_read_ready = request_read,
         }, {
                 .state = SHOES_REQUEST_WRITE,

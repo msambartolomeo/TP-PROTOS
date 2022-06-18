@@ -9,13 +9,16 @@ bool writeResponse(buffer *buf, shoesResponse* response) {
     uint8_t* bufPtr = buffer_write_ptr(buf, &n);
 
     size_t size = response->dataLen + 1;
-    if(n < size) return -1;
+    if(n < size) return false;
 
     *bufPtr++ = response->status;
     memcpy(bufPtr, response->data, response->dataLen);
 
-    if(response->dataLen > 0)
-        free(response->data);
+    buffer_write_adv(buf, size);
+
+    //TODO
+    //if(response->dataLen > 0)
+    //    free(response->data);
 
     //Clean response
     response->status = RESPONSE_SUCCESS;
