@@ -15,6 +15,7 @@
 #include "socks5.h"
 
 #define DEFAULT_CLIENT_PORT 1080
+#define DEFAULT_SHOES_PORT 1081
 #define DEFAULT_SERVER_PORT 80
 #define SELECTOR_TIMEOUT 100
 
@@ -135,7 +136,12 @@ static void passive_socket_handler(struct selector_key *key)
     printf("NEW CONNECTION\n");
 }
 
+static void shoes_passive_socket_handler(struct selector_key *key) {
+    int fd = key->fd;
+}
+
 const struct fd_handler passiveSocketFdHandler = {passive_socket_handler, 0, 0, 0};
+const struct fd_handler shoesPassiveSocketHandler = {shoes_passive_socket_handler, 0, 0, 0};
 
 int network_handler()
 {
@@ -162,25 +168,33 @@ int network_handler()
     }
 
     const int passiveSocket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
-    if (!(passiveSocket))
+    const int shoesPassiveSocket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
+    if (!(passiveSocket && shoesPassiveSocket))
     {
         error_msg = "unable to create socket";
         goto error;
     }
 
     setsockopt(passiveSocket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+    setsockopt(shoesPassiveSocket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 
     struct sockaddr_in passiveaddr = {0};
     passiveaddr.sin_addr.s_addr = INADDR_ANY;
     passiveaddr.sin_family = AF_INET;
     passiveaddr.sin_port = htons(DEFAULT_CLIENT_PORT);
-    if (bind(passiveSocket, (struct sockaddr *)&passiveaddr, sizeof(passiveaddr)) < 0)
+
+    struct sockaddr_in shoesPassiveAddr = {0};
+    shoesPassiveAddr.sin_addr.s_addr = INADDR_ANY;
+    shoesPassiveAddr.sin_family = AF_INET;
+    shoesPassiveAddr.sin_port = htons(DEFAULT_SHOES_PORT);
+    if (bind(passiveSocket, (struct sockaddr *)&passiveaddr, sizeof(passiveaddr)) < 0 ||
+        bind(shoesPassiveSocket, (struct sockaddr *)&shoesPassiveAddr, sizeof(shoesPassiveAddr)) < 0)
     {
         error_msg = "bind client socket error";
         goto error;
     }
 
-    if (listen(passiveSocket, 1) < 0)
+    if (listen(passiveSocket, 50) < 0 || listen(shoesPassiveSocket, 10))
     {
         error_msg = "listen client socket error";
         goto error;
@@ -190,6 +204,11 @@ int network_handler()
     if((registerRet = selector_register(selector, passiveSocket, &passiveSocketFdHandler, OP_READ, NULL)) != SELECTOR_SUCCESS) {
         fprintf(stderr, "Passive socket register error: %s", selector_error(registerRet));
         exit(1);
+    }
+
+    if ((registerRet = selector_register(selector, shoesPassiveSocket, &shoesPassiveSocketHandler, OP_READ, NULL)) != SELECTOR_SUCCESS) {
+        fprintf(stderr, "SHOES Passive socket register error: %s", selector_error(registerRet));
+        exit(1)
     }
 
     while (1)

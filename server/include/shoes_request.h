@@ -37,27 +37,21 @@ enum shoesParseState {
 };
 
 enum shoesPutAddEditUserState {
-    PARSE_USERNAME_LENGHT_ADD_EDIT_USER,
-    PARSE_USERNAME_ADD_EDIT_USER,
-    PARSE_PASSWORD_LENGTH_ADD_EDIT_USER,
-    PARSE_PASSWORD_ADD_EDIT_USER,
+    PARSE_ADD_EDIT_USER_ULEN,
+    PARSE_ADD_EDIT_USER_USER,
+    PARSE_ADD_EDIT_USER_PLEN,
+    PARSE_ADD_EDIT_USER_PASS
 };
 
 enum shoesPutRemoveUserState {
-    PARSE_USERNAME_LENGHT_REMOVE_USER,
-    PARSE_USERNAME_REMOVE_USER,
+    PARSE_REMOVE_USER_ULEN,
+    PARSE_REMOVE_USER_USER
 };
 
 enum shoesPutModifyBufferState {
     PARSE_BUFFER_SIZE,
     PARSE_BUFFER_DONE,
     PARSE_ERROR_BUFSIZE_OUT_OF_RANGE,
-};
-
-enum shoesPutModifySpoofState {
-    PARSE_SPOOF_STATUS,
-    PARSE_DONE_SPOOF_STATUS,
-    PARSE_ERROR_UNSUPPORTED_SPOOF_STATUS,
 };
 
 typedef struct shoesPutAddEditUserParser {
@@ -82,10 +76,19 @@ typedef struct shoesPutModifyBufferParser {
     uint8_t *pointer;
 } shoesPutModifyBufferParser;
 
-typedef struct shoesPutModifySpoofParser {
-    enum shoesPutModifySpoofState state;
-    uint8_t spoofStatus;
-} shoesPutModifySpoofParser;
+typedef enum shoesResponseStatus {
+    RESPONSE_SUCCESS = 0x00,
+    RESPONSE_SERV_FAIL = 0x01,
+    RESPONSE_FMLY_NOT_SUPPORTED = 0x02,
+    RESPONSE_CMD_NOT_SUPPORTED = 0x03,
+    RESPONSE_CMD_FAIL = 0x04
+} shoesResponseStatus;
+
+typedef struct shoesResponse {
+    shoesResponseStatus status;
+    void * data;
+    size_t dataLen;
+} shoesResponse;
 
 typedef struct shoesParser {
     enum shoesParseState state;
@@ -99,20 +102,6 @@ typedef struct shoesParser {
         shoesPutAddEditUserParser addEditUserParser;
         shoesPutRemoveUserParser removeUserParser;
         shoesPutModifyBufferParser modifyBufferParser;
-        shoesPutModifySpoofParser modifySpoofParser;
     } putParser;
+    shoesResponse response;
 } shoesParser;
-
-typedef enum shoesResponseStatus {
-    RESPONSE_SUCCESS = 0x00,
-    RESPONSE_SERV_FAIL = 0x01,
-    RESPONSE_FMLY_NOT_SUPPORTED = 0x02,
-    RESPONSE_CMD_NOT_SUPPORTED = 0x03,
-    RESPONSE_CMD_FAIL = 0x04
-} shoesResponseStatus;
-
-typedef struct shoesResponse {
-    shoesResponseStatus status;
-    void* data;
-    size_t dataLen;
-} shoesResponse;
