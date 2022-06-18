@@ -117,7 +117,8 @@ static void passive_socket_handler(struct selector_key *key)
     conn->client_interests = OP_READ;
     conn->origin_interests = OP_NOOP;
 
-    conn->client_socket = accept(fd, (struct sockaddr*)&conn->client_addr, &(socklen_t){sizeof(struct sockaddr_in)});
+    conn->client_addr_len = sizeof(conn->client_addr);
+    conn->client_socket = accept(fd, (struct sockaddr*)&conn->client_addr, &conn->client_addr_len);
     if (conn->client_socket == -1)
     {
         perror("Couldn't connect to client");
