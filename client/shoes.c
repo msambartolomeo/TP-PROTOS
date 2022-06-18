@@ -15,6 +15,10 @@ typedef struct shoesConnection {
 
 static shoesConnection conn = {0};
 
+static shoesResponseStatus lastStatus;
+static shoesPutCommand lastCommand;
+static shoesConnectStatus connectStatus;
+
 static int serverConnection(const char* host, const char* port) {
     if (conn.initialized) {
         fprintf(stderr, "Error: Tried to connect to server more than once.\n");
@@ -60,6 +64,7 @@ shoesConnectStatus shoesConnect(const char* host, const char* port,
     const int RES_LEN = 2;
 
     if (serverConnection(host, port) == -1) {
+        connectStatus = CONNECT_SERV_FAIL;
         return CONNECT_SERV_FAIL; // TODO: return proper error code
     }
 
@@ -104,9 +109,11 @@ shoesConnectStatus shoesConnect(const char* host, const char* port,
 
     if (*(uint8_t*)buf != SHOES_VER) {
         fprintf(stderr, "Invalid server shoes version: %d\n", serv_ver);
+        connectStatus = CONNECT_SERV_FAIL;
         return CONNECT_SERV_FAIL;
     }
 
+    connectStatus = serv_ret;
     return serv_ret;
 }
 
@@ -155,6 +162,7 @@ shoesResponseStatus shoesGetMetrics(shoesServerMetrics* metrics) {
 
     uint8_t status;
     if ((status = getResponseStatus()) != RESPONSE_SUCCESS) {
+        lastStatus = status;
         return status;
     }
 
@@ -168,6 +176,7 @@ shoesResponseStatus shoesGetMetrics(shoesServerMetrics* metrics) {
     metrics->currentConnections = *(uint32_t*)&buf[5];
     metrics->bytesTransferred = *(uint32_t*)&buf[9];
 
+    lastStatus = status;
     return status;
 }
 
@@ -179,6 +188,7 @@ shoesResponseStatus shoesGetUserList(shoesUserList* list) {
 
     uint8_t status;
     if ((status = getResponseStatus()) != RESPONSE_SUCCESS) {
+        lastStatus = status;
         return status;
     }
 
@@ -214,17 +224,19 @@ shoesResponseStatus shoesGetUserList(shoesUserList* list) {
 
     list->users = realloc(list->users, list->n * sizeof(char**));
 
+    lastStatus = status;
     return status;
 }
 
 shoesResponseStatus shoesGetSpoofingStatus(bool* status) {
-    if (sendGetRequest(CMD_LIST_USERS) == -1) {
+    if (sendGetRequest(CMD_GET_SPOOF) == -1) {
         fprintf(stderr, "Spoofing request error\n");
         return -1; // TODO
     }
 
     uint8_t res_status;
     if ((res_status = getResponseStatus()) != RESPONSE_SUCCESS) {
+        lastStatus = res_status;
         return res_status;
     }
 
@@ -236,6 +248,7 @@ shoesResponseStatus shoesGetSpoofingStatus(bool* status) {
 
     *status = (bool)res;
 
+    lastStatus = res_status;
     return res_status;
 }
 
@@ -257,18 +270,23 @@ static inline shoesResponseStatus shoesAddOrEditUser(const shoesUser* user,
         return -1;
     }
 
-    return getResponseStatus();
+    lastStatus = getResponseStatus();
+    return lastStatus;
 }
 
 shoesResponseStatus shoesAddUser(const shoesUser* user) {
+    lastCommand = CMD_ADD_USER;
     return shoesAddOrEditUser(user, CMD_ADD_USER);
 }
 
 shoesResponseStatus shoesEditUser(const shoesUser* user) {
+    lastCommand = CMD_EDIT_USER;
     return shoesAddOrEditUser(user, CMD_EDIT_USER);
 }
 
 shoesResponseStatus shoesRemoveUser(const char* user) {
+    lastCommand = CMD_REMOVE_USER;
+
     size_t ulen = strlen(user);
     size_t dataLen = ulen + 1;
     uint8_t data[dataLen];
@@ -281,25 +299,32 @@ shoesResponseStatus shoesRemoveUser(const char* user) {
         return -1;
     }
 
-    return getResponseStatus();
+    lastStatus = getResponseStatus();
+    return lastStatus;
 }
 
 shoesResponseStatus shoesModifyBufferSize(uint16_t size) {
+    lastCommand = CMD_MODIFY_BUFFER;
+
     if (sendPutRequest(CMD_MODIFY_BUFFER, &size, sizeof(uint16_t)) == -1) {
         fprintf(stderr, "Modify buffer request error\n");
         return -1;
     }
 
-    return getResponseStatus();
+    lastStatus = getResponseStatus();
+    return lastStatus;
 }
 
 shoesResponseStatus shoesModifyPasswordSpoofingStatus(bool newStatus) {
+    lastCommand = CMD_MODIFY_SPOOF;
+
     if (sendPutRequest(CMD_MODIFY_SPOOF, &newStatus, sizeof(bool)) == -1) {
         fprintf(stderr, "Modify spoofing request error\n");
         return -1;
     }
 
-    return getResponseStatus();
+    lastStatus = getResponseStatus();
+    return lastStatus;
 }
 
 void freeShoesUser(shoesUser* user) {
@@ -310,4 +335,68 @@ void freeShoesUser(shoesUser* user) {
 void freeShoesUserList(shoesUserList* list) {
     free(list->users[0]);
     free(list->users);
+}
+
+const char* humanReadableConnectStatus(shoesConnectStatus status) {
+    switch (status) {
+        case CONNECT_SUCCESS:
+            return "Success";
+        case CONNECT_SERV_FAIL:
+            return "Internal server error";
+        case CONNECT_INVALID_VER:
+            return "Invalid SHOES Version";
+        case CONNNECT_INVALID_USER:
+            return "Invalid username or password";
+        default:
+            return "Unknown error";
+    }
+}
+
+static const char* humanReadableCmdError(shoesResponseStatus status, shoesPutCommand putCommand) {
+    switch (putCommand) {
+        case CMD_ADD_USER:
+            switch (status) {
+                case RESPONSE_CMD_FAIL_1:
+                    return "User already exists";
+                case RESPONSE_CMD_FAIL_2:
+                    return "Maximum number of users reached";
+                default:
+                    return "Unknown error";
+            }
+        case CMD_REMOVE_USER:
+        case CMD_EDIT_USER:
+            return "The user does not exist";
+        case CMD_MODIFY_BUFFER:
+            return "Buffer size out of range";
+        case CMD_MODIFY_SPOOF:
+            return "Invalid spoofing status";
+        default:
+            return "Unknown error";
+    }
+}
+
+static const char* humanReadableResponseStatus(shoesResponseStatus status, shoesPutCommand putCommand) {
+    switch (status) {
+        case RESPONSE_SUCCESS:
+            return "Success";
+        case RESPONSE_SERV_FAIL:
+            return "Internal server error";
+        case RESPONSE_FMLY_NOT_SUPPORTED:
+            return "Family not supported";
+        case RESPONSE_CMD_NOT_SUPPORTED:
+            return "Command not supported";
+        case RESPONSE_CMD_FAIL_1:
+        case RESPONSE_CMD_FAIL_2:
+            return humanReadableCmdError(status, putCommand);
+        default:
+            return "Unknown error.";
+    }
+}
+
+const char* shoesHumanReadableStatus() {
+    if(!conn.initialized) {
+        return humanReadableConnectStatus(connectStatus);
+    }
+
+    return humanReadableResponseStatus(lastStatus, lastCommand);
 }

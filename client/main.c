@@ -5,10 +5,9 @@
 
 static void listUsers() {
     shoesUserList list;
-    shoesResponseStatus status;
-    if ((status = shoesGetUserList(&list)) != RESPONSE_SUCCESS) {
-        fprintf(stderr, "List Users Error: Code %d",
-                status); // TODO: better error printing
+    if (shoesGetUserList(&list) != RESPONSE_SUCCESS) {
+        fprintf(stderr, "List Users Error: %s",
+                shoesHumanReadableStatus()); // TODO: better error printing
         return;
     }
 
@@ -22,10 +21,9 @@ static void listUsers() {
 
 static void getServerMetrics() {
     shoesServerMetrics metrics;
-    shoesResponseStatus status;
-    if ((status = shoesGetMetrics(&metrics)) != RESPONSE_SUCCESS) {
-        fprintf(stderr, "Get Metrics Error: Code %d",
-                status); // TODO: better error printing
+    if (shoesGetMetrics(&metrics) != RESPONSE_SUCCESS) {
+        fprintf(stderr, "Get Metrics Error: %s",
+                shoesHumanReadableStatus()); // TODO: better error printing
         return;
     }
 
@@ -37,11 +35,10 @@ static void getServerMetrics() {
 
 void getPasswordSpoofingStatus() {
     bool spoofStatus;
-    shoesResponseStatus responseStatus;
-    if ((responseStatus = shoesGetSpoofingStatus(&spoofStatus)) !=
+    if (shoesGetSpoofingStatus(&spoofStatus) !=
         RESPONSE_SUCCESS) {
-        fprintf(stderr, "Get spoof status error: Code %d",
-                responseStatus); // TODO: better error printing
+        fprintf(stderr, "Get spoof status error: %s",
+                shoesHumanReadableStatus()); // TODO: better error printing
         return;
     }
 
@@ -49,10 +46,9 @@ void getPasswordSpoofingStatus() {
 }
 
 void modifyBufSize(uint32_t size) {
-    shoesResponseStatus responseStatus;
-    if ((responseStatus = shoesModifyBufferSize(size)) != RESPONSE_SUCCESS) {
-        fprintf(stderr, "Modify bufsize error: Code %d",
-                responseStatus); // TODO: better error printing
+    if (shoesModifyBufferSize(size) != RESPONSE_SUCCESS) {
+        fprintf(stderr, "Modify bufsize error: %s",
+                shoesHumanReadableStatus()); // TODO: better error printing
         return;
     }
 
@@ -61,10 +57,9 @@ void modifyBufSize(uint32_t size) {
 
 void addUsers(struct shoesUser* users, uint8_t len) {
     for (int i = 0; i < len; i++) {
-        shoesResponseStatus responseStatus;
-        if ((responseStatus = shoesAddUser(&users[i])) != RESPONSE_SUCCESS) {
-            fprintf(stderr, "Add user error: Code %d",
-                    responseStatus); // TODO: better error printing
+        if (shoesAddUser(&users[i]) != RESPONSE_SUCCESS) {
+            fprintf(stderr, "Add user error: %s",
+                    shoesHumanReadableStatus()); // TODO: better error printing
             return;
         }
 
@@ -74,10 +69,9 @@ void addUsers(struct shoesUser* users, uint8_t len) {
 
 void editUsers(struct shoesUser* users, uint8_t len) {
     for (int i = 0; i < len; i++) {
-        shoesResponseStatus responseStatus;
-        if ((responseStatus = shoesEditUser(&users[i])) != RESPONSE_SUCCESS) {
-            fprintf(stderr, "Edit user error: Code %d",
-                    responseStatus); // TODO: better error printing
+        if (shoesEditUser(&users[i]) != RESPONSE_SUCCESS) {
+            fprintf(stderr, "Edit user error: %s",
+                    shoesHumanReadableStatus()); // TODO: better error printing
             return;
         }
 
@@ -87,10 +81,9 @@ void editUsers(struct shoesUser* users, uint8_t len) {
 
 void removeUsers(char** users, uint8_t len) {
     for (int i = 0; i < len; i++) {
-        shoesResponseStatus responseStatus;
-        if ((responseStatus = shoesRemoveUser(users[i])) != RESPONSE_SUCCESS) {
-            fprintf(stderr, "Remove user error: Code %d",
-                    responseStatus); // TODO: better error printing
+        if (shoesRemoveUser(users[i]) != RESPONSE_SUCCESS) {
+            fprintf(stderr, "Remove user error: %s",
+                    shoesHumanReadableStatus()); // TODO: better error printing
             return;
         }
 
@@ -99,11 +92,10 @@ void removeUsers(char** users, uint8_t len) {
 }
 
 void modifySpoofingStatus(bool newStatus) {
-    shoesResponseStatus responseStatus;
-    if ((responseStatus = shoesModifyPasswordSpoofingStatus(newStatus)) !=
+    if (shoesModifyPasswordSpoofingStatus(newStatus) !=
         RESPONSE_SUCCESS) {
-        fprintf(stderr, "Modify bufsize error: Code %d",
-                responseStatus); // TODO: better error printing
+        fprintf(stderr, "Modify spoofing status error: %s",
+                shoesHumanReadableStatus()); // TODO: better error printing
         return;
     }
 
@@ -119,10 +111,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    shoesConnectStatus status;
-    if ((status = shoesConnect("127.0.0.1", "1081", &args.authUser)) !=
+    if (shoesConnect("127.0.0.1", "1081", &args.authUser) !=
         CONNECT_SUCCESS) {
-        fprintf(stderr, "Connect error: Code %d\n", status);
+        fprintf(stderr, "Connect error: %s\n",
+                shoesHumanReadableStatus());
         return 1;
     }
 
