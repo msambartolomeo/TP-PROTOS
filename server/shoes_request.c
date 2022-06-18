@@ -1,9 +1,8 @@
 #include "shoes_request.h"
-#include "buffer.h"
 #include <memory.h>
 #include <stdio.h>
 
-bool sendResponse(buffer *buf, shoesResponse* response) {
+bool writeResponse(buffer *buf, shoesResponse* response) {
     if(!buffer_can_write(buf)) return false;
 
     size_t n;
@@ -114,7 +113,7 @@ static void shoes_parse_modify_buffer(shoesParser * parser, uint8_t byte) {
                    parser->putParser.modifyBufferParser.bufferSize);
             break;
         case PARSE_ERROR_BUFSIZE_OUT_OF_RANGE:
-            parser->response.status = RESPONSE_SERV_FAIL; //TODO: Better status
+            parser->response.status = RESPONSE_CMD_FAIL;
             parser->state = PARSE_DONE;
             break;
         case PARSE_BUFFER_DONE:
@@ -126,7 +125,7 @@ static void shoes_parse_modify_buffer(shoesParser * parser, uint8_t byte) {
 
 static void shoes_parse_modify_spoof(shoesParser * parser, uint8_t byte) {
     if (byte != false && byte != true) {
-        parser->response.status = RESPONSE_SERV_FAIL; //TODO: Better status
+        parser->response.status = RESPONSE_CMD_FAIL; //TODO: Better status
     } else {
         // TODO: Actually modify spoofing status
         parser->response.status = RESPONSE_SUCCESS;
@@ -249,7 +248,7 @@ static void shoes_request_parse_byte(shoesParser* parser, uint8_t byte) {
     }
 }
 
-inline bool finishedParsing(shoesParser* parser) {
+bool finished_request_parsing(shoesParser* parser) {
     switch (parser->state) {
     case PARSE_DONE:
     case PARSE_ERROR_UNSUPPORTED_CMD:
@@ -260,11 +259,11 @@ inline bool finishedParsing(shoesParser* parser) {
     }
 }
 
-void shoes_request_parse(shoesParser * parser, buffer * buf, bool * error) {
+void shoes_request_parse(shoesParser * parser, buffer * buf) {
     while(buffer_can_read(buf)) {
         uint8_t byte = buffer_read(buf);
         shoes_request_parse_byte(parser, byte);
 
-        if(finishedParsing(parser)) break;
+        if(finished_request_parsing(parser)) break;
     }
 }

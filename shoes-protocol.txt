@@ -56,7 +56,7 @@ SHOES Protocol Version 1.0
                          +-----+--------+
 
     A STATUS field of X'00' indicates success. If the server returns a
-    failure (STATUS value other than X'00') status, it MUST close the
+    failure (STATUS value other than X'00') status, it MUST close the  // TODO: Borrar esto. Aún si lo dejamos hay que avisar quién es el que cierra la conexión
     connection.
 
     Other values defined in this version are:

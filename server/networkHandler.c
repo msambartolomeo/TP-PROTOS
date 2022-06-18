@@ -13,6 +13,7 @@
 #include "selector.h"
 #include "stm.h"
 #include "socks5.h"
+#include "shoes.h"
 
 #define DEFAULT_CLIENT_PORT 1080
 #define DEFAULT_SHOES_PORT 1081
@@ -36,6 +37,24 @@ void close_connection(socks5_connection * connection)
         selector_unregister_fd(selector, server_socket);
         close(server_socket);
     }
+    if (client_socket != -1)
+    {
+        selector_unregister_fd(selector, client_socket);
+        close(client_socket);
+    }
+
+    buffer_reset(&connection->read_buffer);
+    buffer_reset(&connection->write_buffer);
+
+    free(connection);
+
+    printf("CONNECTION CLOSED\n");
+}
+
+void close_shoes_connection(shoes_connection * connection)
+{
+    int client_socket = connection->client_socket;
+
     if (client_socket != -1)
     {
         selector_unregister_fd(selector, client_socket);
@@ -138,6 +157,42 @@ static void passive_socket_handler(struct selector_key *key)
 
 static void shoes_passive_socket_handler(struct selector_key *key) {
     int fd = key->fd;
+
+    shoes_connection * conn = malloc(sizeof(struct shoes_connection));
+    if (conn == NULL) {
+        perror("malloc error");
+        return;
+    }
+
+    memset(conn, 0, sizeof(shoes_connection));
+    buffer_init(&conn->read_buffer, BUFFER_DEFAULT_SIZE, conn->raw_buffer_a);
+    buffer_init(&conn->write_buffer, BUFFER_DEFAULT_SIZE, conn->raw_buffer_b);
+
+    conn->stm.initial = AUTHENTICATION_READ;
+    conn->stm.max_state = ERROR;
+    conn->stm.states = get_shoes_states();
+
+    stm_init(&conn->stm);
+
+    conn->client_interests = OP_READ;
+
+    conn->client_socket = accept(fd, (struct sockaddr*)&conn->client_addr, &(socklen_t){sizeof(struct sockaddr_in)});
+    if (conn->client_socket == -1)
+    {
+        perror("Couldn't connect to client");
+        close_shoes_connection(conn);
+        return;
+    }
+    selector_fd_set_nio(conn->client_socket);
+
+    if (selector_register(selector, conn->client_socket, &connectionFdHandler, OP_READ, conn)) {
+        perror("selector_register error");
+        close_shoes_connection(conn);
+        return;
+    }
+
+    printf("NEW CONNECTION\n");
+
 }
 
 const struct fd_handler passiveSocketFdHandler = {passive_socket_handler, 0, 0, 0};
@@ -208,7 +263,7 @@ int network_handler()
 
     if ((registerRet = selector_register(selector, shoesPassiveSocket, &shoesPassiveSocketHandler, OP_READ, NULL)) != SELECTOR_SUCCESS) {
         fprintf(stderr, "SHOES Passive socket register error: %s", selector_error(registerRet));
-        exit(1)
+        exit(1);
     }
 
     while (1)

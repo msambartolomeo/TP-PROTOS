@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include "buffer.h"
 
 #define USERNAME_MAX_LENGTH 256
 #define PASSWORD_MAX_LENGTH 256
@@ -81,7 +82,8 @@ typedef enum shoesResponseStatus {
     RESPONSE_SERV_FAIL = 0x01,
     RESPONSE_FMLY_NOT_SUPPORTED = 0x02,
     RESPONSE_CMD_NOT_SUPPORTED = 0x03,
-    RESPONSE_CMD_FAIL = 0x04
+    RESPONSE_CMD_FAIL = 0x04,
+    RESPONSE_CMD_FAIL_SECOND = 0x05
 } shoesResponseStatus;
 
 typedef struct shoesResponse {
@@ -105,3 +107,8 @@ typedef struct shoesParser {
     } putParser;
     shoesResponse response;
 } shoesParser;
+
+void shoes_request_parse(shoesParser * parser, buffer * buf);
+bool finished_request_parsing(shoesParser* parser);
+bool writeResponse(buffer *buf, shoesResponse* response);
+

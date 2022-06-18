@@ -9,11 +9,19 @@
 #include "authentication.h"
 #include "request.h"
 #include "selector.h"
-#include "shoes.h"
+#include "shoes_request.h"
 
 
 #define BUFFER_DEFAULT_SIZE 1024
 static const uint8_t SHOES_VERSION = 0x01;
+
+enum socks5_state {
+    AUTHENTICATION_READ,
+    AUTHENTICATION_WRITE,
+    REQUEST_READ,
+    REQUEST_WRITE,
+    ERROR,
+};
 
 typedef struct shoes_connection {
     // Datos del cliente
@@ -31,7 +39,9 @@ typedef struct shoes_connection {
     struct state_machine stm;
 
     union {
-        shoesRequestParser shoesRequestParser;
+        struct authenticationParser authenticationParser;
+        shoesParser shoesRequestParser;
     } parser;
-
 } shoes_connection;
+
+const struct state_definition * get_shoes_states();
