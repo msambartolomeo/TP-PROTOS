@@ -173,7 +173,7 @@ SHOES Protocol Version 1.0
             |  X'01'  |  X'03'  |    2    |
             +---------+---------+---------+
 
-            Where BUFSIZE is a 4 octet integer representing the buffer size
+            Where BUFSIZE is a 2 octet integer representing the buffer size
             in bytes. The server will try to modify the buffer size to the
             given value. However, the server will not allow the buffer size
             to be set to a value less than 512 bytes, or greater than 65536

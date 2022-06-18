@@ -61,7 +61,7 @@ shoesResponseStatus shoesAddUser(const shoesUser* user);
 shoesResponseStatus shoesRemoveUser(const char* user);
 shoesResponseStatus shoesEditUser(const shoesUser* user);
 
-shoesResponseStatus shoesModifyBufferSize(uint32_t size);
+shoesResponseStatus shoesModifyBufferSize(uint16_t size);
 shoesResponseStatus shoesModifyPasswordSpoofingStatus(bool status);
 
 void freeShoesUser(shoesUser* user);

@@ -42,9 +42,9 @@ static void shoes_parse_add_edit_user(shoesParser * parser, uint8_t byte) {
                 PARSE_ADD_EDIT_USER_USER;
             break;
         case PARSE_ADD_EDIT_USER_USER:
-            *(parser->putParser.removeUserParser.pointer++) = byte;
-            parser->putParser.removeUserParser.remaining--;
-            if (parser->putParser.removeUserParser.remaining == 0) {
+            *(parser->putParser.addEditUserParser.pointer++) = byte;
+            parser->putParser.addEditUserParser.remaining--;
+            if (parser->putParser.addEditUserParser.remaining == 0) {
                 parser->putParser.addEditUserParser.state =
                     PARSE_ADD_EDIT_USER_PLEN;
             }
@@ -61,9 +61,9 @@ static void shoes_parse_add_edit_user(shoesParser * parser, uint8_t byte) {
                 PARSE_ADD_EDIT_USER_PASS;
             break;
         case PARSE_ADD_EDIT_USER_PASS:
-            *(parser->putParser.removeUserParser.pointer++) = byte;
-            parser->putParser.removeUserParser.remaining--;
-            if (parser->putParser.removeUserParser.remaining == 0) {
+            *(parser->putParser.addEditUserParser.pointer++) = byte;
+            parser->putParser.addEditUserParser.remaining--;
+            if (parser->putParser.addEditUserParser.remaining == 0) {
                 // TODO: Add/Edit user
                 printf("Added user '%s' with pass '%s'\n",
                        parser->putParser.addEditUserParser.username,
@@ -104,25 +104,14 @@ static void shoes_parse_remove_user(shoesParser * parser, uint8_t byte) {
 }
 
 static void shoes_parse_modify_buffer(shoesParser * parser, uint8_t byte) {
-    switch (parser->putParser.modifyBufferParser.state) {
-        case PARSE_BUFFER_SIZE:
-            *(parser->putParser.modifyBufferParser.pointer++) = byte; // TODO: See endianness
-            parser->putParser.modifyBufferParser.remaining--;
-            if (parser->putParser.modifyBufferParser.remaining == 0) {
-                // TODO: Actually change the buffer size
-                printf("Modified buffer: %d\n",
-                       parser->putParser.modifyBufferParser.bufferSize);
-                parser->putParser.modifyBufferParser.state = PARSE_BUFFER_DONE;
-            }
-            break;
-        case PARSE_ERROR_BUFSIZE_OUT_OF_RANGE:
-            parser->response.status = RESPONSE_CMD_FAIL;
-            parser->state = PARSE_DONE;
-            break;
-        case PARSE_BUFFER_DONE:
-            parser->response.status = RESPONSE_SUCCESS;
-            parser->state = PARSE_DONE;
-            break;
+    *(parser->putParser.modifyBufferParser.pointer++) = byte; // TODO: See endianness
+    parser->putParser.modifyBufferParser.remaining--;
+    if (parser->putParser.modifyBufferParser.remaining == 0) {
+        // TODO: Actually change the buffer size
+        printf("Modified buffer: %d\n",
+               parser->putParser.modifyBufferParser.bufferSize);
+        parser->response.status = RESPONSE_SUCCESS;
+        parser->state = PARSE_DONE;
     }
 }
 

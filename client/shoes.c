@@ -270,7 +270,7 @@ shoesResponseStatus shoesEditUser(const shoesUser* user) {
 
 shoesResponseStatus shoesRemoveUser(const char* user) {
     size_t ulen = strlen(user);
-    size_t dataLen = ulen + 2;
+    size_t dataLen = ulen + 1;
     uint8_t data[dataLen];
 
     data[0] = (uint8_t)ulen;
@@ -284,8 +284,8 @@ shoesResponseStatus shoesRemoveUser(const char* user) {
     return getResponseStatus();
 }
 
-shoesResponseStatus shoesModifyBufferSize(uint32_t size) {
-    if (sendPutRequest(CMD_MODIFY_BUFFER, &size, sizeof(uint32_t)) == -1) {
+shoesResponseStatus shoesModifyBufferSize(uint16_t size) {
+    if (sendPutRequest(CMD_MODIFY_BUFFER, &size, sizeof(uint16_t)) == -1) {
         fprintf(stderr, "Modify buffer request error\n");
         return -1;
     }

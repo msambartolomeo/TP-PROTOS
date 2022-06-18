@@ -24,7 +24,7 @@ struct shoesArgs {
     struct shoesUser editUsers[MAX_USERS];
 
     bool modifyBufSize;
-    uint32_t bufSize;
+    uint16_t bufSize;
 
     bool modifySpoofingStatus;
     bool newSpoofingStatus;
