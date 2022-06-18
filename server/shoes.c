@@ -114,12 +114,6 @@ static const struct state_definition states[] = {
                 .state = SHOES_AUTHENTICATION_WRITE,
                 .on_write_ready = authentication_write,
         }, {
-                .state = SHOES_AUTHENTICATION_READ,
-                .on_read_ready = authentication_read,
-        }, {
-                .state = SHOES_AUTHENTICATION_WRITE,
-                .on_write_ready = authentication_write,
-        }, {
                 .state = SHOES_REQUEST_READ,
                 .on_read_ready = request_read,
         }, {

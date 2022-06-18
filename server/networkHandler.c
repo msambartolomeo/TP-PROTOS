@@ -107,6 +107,36 @@ static const struct fd_handler connectionFdHandler = {
     .handle_close = connection_close,
 };
 
+static void shoesConnectionRead(struct selector_key *key) {
+    shoes_connection *conn = (shoes_connection *) key->data;
+    const enum shoes_state state = stm_handler_read(&conn->stm, key);
+
+    if (state == SHOES_ERROR) {
+        close_shoes_connection(conn);
+    }
+}
+
+static void shoesConnectionWrite(struct selector_key *key) {
+    shoes_connection *conn = (shoes_connection *) key->data;
+    const enum shoes_state state = stm_handler_write(&conn->stm, key);
+
+    if (state == SHOES_ERROR) {
+        close_shoes_connection(conn);
+    }
+}
+
+static void shoesConnectionClose(struct selector_key *key) {
+    shoes_connection *conn = (shoes_connection *) key->data;
+    stm_handler_close(&conn->stm, key);
+}
+
+static const struct fd_handler shoesConnectionFdHandler = {
+    .handle_read = shoesConnectionRead,
+    .handle_write = shoesConnectionWrite,
+    .handle_close = shoesConnectionClose,
+};
+
+
 const struct fd_handler *get_connection_fd_handler() {
     return &connectionFdHandler;
 }
@@ -183,7 +213,7 @@ static void shoes_passive_socket_handler(struct selector_key *key) {
     }
     selector_fd_set_nio(conn->client_socket);
 
-    if (selector_register(selector, conn->client_socket, &connectionFdHandler, OP_READ, conn)) {
+    if (selector_register(selector, conn->client_socket, &shoesConnectionFdHandler, OP_READ, conn)) {
         perror("selector_register error");
         close_shoes_connection(conn);
         return;
