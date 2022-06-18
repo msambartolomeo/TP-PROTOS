@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    if (shoesConnect("127.0.0.1", "1081", &args.authUser) !=
+    if (shoesConnect("127.0.0.1", "8080", &args.authUser) !=
         CONNECT_SUCCESS) {
         fprintf(stderr, "Connect error: %s\n",
                 shoesHumanReadableStatus());
