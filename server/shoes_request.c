@@ -109,11 +109,11 @@ static void shoes_parse_modify_buffer(shoesParser * parser, uint8_t byte) {
             *(parser->putParser.modifyBufferParser.pointer++) = byte; // TODO: See endianness
             parser->putParser.modifyBufferParser.remaining--;
             if (parser->putParser.modifyBufferParser.remaining == 0) {
+                // TODO: Actually change the buffer size
+                printf("Modified buffer: %d\n",
+                       parser->putParser.modifyBufferParser.bufferSize);
                 parser->putParser.modifyBufferParser.state = PARSE_BUFFER_DONE;
             }
-            // TODO: Actually change the buffer size
-            printf("Modified buffer: %d\n",
-                   parser->putParser.modifyBufferParser.bufferSize);
             break;
         case PARSE_ERROR_BUFSIZE_OUT_OF_RANGE:
             parser->response.status = RESPONSE_CMD_FAIL;
@@ -132,7 +132,7 @@ static void shoes_parse_modify_spoof(shoesParser * parser, uint8_t byte) {
     } else {
         // TODO: Actually modify spoofing status
         parser->response.status = RESPONSE_SUCCESS;
-        printf("Modified spoofing: %d", byte);
+        printf("Modified spoofing: %d\n", byte);
     }
 
     parser->state = PARSE_DONE;
