@@ -218,6 +218,11 @@ shoesResponseStatus shoesGetUserList(shoesUserList* list) {
 }
 
 shoesResponseStatus shoesGetSpoofingStatus(bool* status) {
+    if (sendGetRequest(CMD_LIST_USERS) == -1) {
+        fprintf(stderr, "Spoofing request error\n");
+        return -1; // TODO
+    }
+
     uint8_t res_status;
     if ((res_status = getResponseStatus()) != RESPONSE_SUCCESS) {
         return res_status;
@@ -242,10 +247,10 @@ static inline shoesResponseStatus shoesAddOrEditUser(const shoesUser* user,
     uint8_t data[dataLen];
 
     data[0] = (uint8_t)ulen;
-    strcpy((char*)&data[1], user->name);
+    memcpy(&data[1], user->name, ulen);
 
     data[1 + ulen] = (uint8_t)plen;
-    strcpy((char*)&data[2 + ulen], user->pass);
+    memcpy(&data[2 + ulen], user->pass, plen);
 
     if (sendPutRequest(cmd, data, dataLen) == -1) {
         fprintf(stderr, "Add user request error\n");
@@ -269,7 +274,7 @@ shoesResponseStatus shoesRemoveUser(const char* user) {
     uint8_t data[dataLen];
 
     data[0] = (uint8_t)ulen;
-    strcpy((char*)&data[1], user);
+    memcpy(&data[1], user, ulen);
 
     if (sendPutRequest(CMD_REMOVE_USER, data, dataLen) == -1) {
         fprintf(stderr, "Remove user request error\n");

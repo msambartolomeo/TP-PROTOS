@@ -20,9 +20,8 @@ typedef enum shoesPutCommand {
 
 typedef enum shoesGetCommand {
     CMD_METRICS = 0,
-    CMD_LIST_USERS = 3,
-    CMD_LIST_CREDENTIALS = 4,
-    CMD_GET_SPOOF = 5,
+    CMD_LIST_USERS,
+    CMD_GET_SPOOF,
 } shoesGetCommand;
 
 typedef enum shoesConnectStatus {
