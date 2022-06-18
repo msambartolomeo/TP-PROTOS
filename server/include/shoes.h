@@ -15,12 +15,12 @@
 #define BUFFER_DEFAULT_SIZE 1024
 static const uint8_t SHOES_VERSION = 0x01;
 
-enum socks5_state {
-    AUTHENTICATION_READ,
-    AUTHENTICATION_WRITE,
-    REQUEST_READ,
-    REQUEST_WRITE,
-    ERROR,
+enum shoes_state {
+    SHOES_AUTHENTICATION_READ,
+    SHOES_AUTHENTICATION_WRITE,
+    SHOES_REQUEST_READ,
+    SHOES_REQUEST_WRITE,
+    SHOES_ERROR,
 };
 
 typedef struct shoes_connection {

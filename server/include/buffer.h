@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <unistd.h>  // size_t, ssize_t
+#include <stdint.h>  // uint8_t, uint16_t, uint32_t, uint64_t
 
 /**
  * buffer.c - buffer con acceso directo (útil para I/O) que mantiene

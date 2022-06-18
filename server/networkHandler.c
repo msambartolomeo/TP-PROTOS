@@ -1,6 +1,4 @@
-#include <arpa/inet.h>
 #include <buffer.h>
-#include <errno.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -168,8 +166,8 @@ static void shoes_passive_socket_handler(struct selector_key *key) {
     buffer_init(&conn->read_buffer, BUFFER_DEFAULT_SIZE, conn->raw_buffer_a);
     buffer_init(&conn->write_buffer, BUFFER_DEFAULT_SIZE, conn->raw_buffer_b);
 
-    conn->stm.initial = AUTHENTICATION_READ;
-    conn->stm.max_state = ERROR;
+    conn->stm.initial = SHOES_AUTHENTICATION_READ;
+    conn->stm.max_state = SHOES_ERROR;
     conn->stm.states = get_shoes_states();
 
     stm_init(&conn->stm);

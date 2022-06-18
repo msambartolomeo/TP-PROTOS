@@ -136,7 +136,7 @@ static void shoes_parse_modify_spoof(shoesParser * parser, uint8_t byte) {
 }
 
 static void generateMetricsResponse(shoesResponse* response) {
-    //TODO
+    printf("BUENAS\n");
 }
 
 static void generateListResponse(shoesResponse* response) {
