@@ -34,6 +34,7 @@ struct Copy {
     int fd;
     buffer *rb, *wb;
     fd_interest interests;
+    fd_interest connection_interests;
     struct Copy *other;
 };
 

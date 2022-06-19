@@ -29,7 +29,7 @@ static unsigned connection_read(struct selector_key *key) {
     size_t count;
     uint8_t *bufptr = buffer_write_ptr(&conn->read_buffer, &count);
 
-    ssize_t len = recv(conn->client_socket, bufptr, count, MSG_NOSIGNAL); // TODO ver por que nosignal
+    ssize_t len = recv(conn->client_socket, bufptr, count, MSG_NOSIGNAL);
 
     if (len <= 0) {
         return ERROR;
@@ -436,6 +436,7 @@ static void copy_init(unsigned state, struct selector_key *key) {
     c->rb = &conn->read_buffer;
     c->wb = &conn->write_buffer;
     c->interests = OP_READ;
+    c->connection_interests = OP_READ | OP_WRITE;
     c->other = &conn->origin_copy;
 
     c = &conn->origin_copy;
@@ -444,6 +445,7 @@ static void copy_init(unsigned state, struct selector_key *key) {
     c->rb = &conn->write_buffer;
     c->wb = &conn->read_buffer;
     c->interests = OP_READ;
+    c->connection_interests = OP_READ | OP_WRITE;
     c->other = &conn->client_copy;
 
     if (dissector_is_on()) {
@@ -468,6 +470,7 @@ static unsigned copy_read(struct selector_key *key) {
 
     if(!buffer_can_write(c->wb)){
         c->interests &= ~OP_READ;
+        c->interests &= c->connection_interests;
         selector_set_interest(key->s, key->fd, c->interests);
         return COPY;
     }
@@ -478,13 +481,30 @@ static unsigned copy_read(struct selector_key *key) {
     ssize_t len = recv(key->fd, bufptr, wbytes, MSG_NOSIGNAL);
     if (len <= 0)
     {
-        //TODO: ver que onda
-        if (len == -1 && errno != EWOULDBLOCK) {
-            perror("SERVER READ ERROR");
-            return ERROR;
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // Shouldn't happen because of selector, but just in case
+            return COPY;
         }
+        if (len == -1) {
+            perror("SERVER READ ERROR");
+            // TODO: segun lei si hay error hay que dejar que igual el otro siga vivo asi que saco el return pero ni idea
+        }
+        // len == 0, EOF
+        c->connection_interests &= ~OP_READ;
+        c->interests &= c->connection_interests;
+        selector_set_interest(key->s, c->fd, c->interests);
+        shutdown(c->fd, SHUT_RD);
 
-        return DONE;
+        c->other->connection_interests &= ~OP_WRITE;
+        if (!buffer_can_read(c->wb)) {
+            c->other->interests &= c->other->connection_interests;
+            selector_set_interest(key->s, c->other->fd, c->other->interests);
+            shutdown(c->other->fd, SHUT_WR);
+        }
+        if (c->connection_interests == OP_NOOP && c->other->connection_interests == OP_NOOP) {
+            return DONE;
+        }
+        return COPY;
     }
     buffer_write_adv(c->wb, len);
 
@@ -507,6 +527,7 @@ static unsigned copy_read(struct selector_key *key) {
     }
 
     c->other->interests |= OP_WRITE;
+    c->other->interests &= c->other->connection_interests;
     selector_set_interest(key->s, c->other->fd, c->other->interests);
 
     return COPY;
@@ -526,25 +547,30 @@ static unsigned copy_write(struct selector_key *key) {
     size_t rbytes;
     uint8_t *bufptr = buffer_read_ptr(c->rb, &rbytes);
 
-    ssize_t len = send(key->fd, bufptr, rbytes, MSG_DONTWAIT);
+    ssize_t len = send(key->fd, bufptr, rbytes, MSG_NOSIGNAL);
     if (len == -1)
     {
-        if (errno != EWOULDBLOCK)
-        {
+        if (errno != EWOULDBLOCK && errno != EAGAIN) {
             perror("SERVER WRITE FAILED");
             return ERROR;
         }
+        // Shouldn't happen because of selector, but just in case
         return COPY;
     }
 
     buffer_read_adv(c->rb, len);
 
     c->other->interests |= OP_READ;
+    c->other->interests &= c->other->connection_interests;
     selector_set_interest(key->s, c->other->fd, c->other->interests);
 
-    if(!buffer_can_read(c->rb)){
+    if(!buffer_can_read(c->rb)) {
         c->interests &= ~OP_WRITE;
+        c->interests &= c->connection_interests;
         selector_set_interest(key->s, c->fd, c->interests);
+        if (c->connection_interests & ~OP_WRITE) {
+            shutdown(c->fd, SHUT_WR);
+        }
     }
 
     return COPY;
