@@ -11,6 +11,7 @@
 #include "users.h"
 #include "networkHandler.h"
 #include "metrics.h"
+#include "logger.h"
 
 // CONNECTION_READ
 static void connection_read_init(unsigned state, struct selector_key *key) {
@@ -29,7 +30,7 @@ static unsigned connection_read(struct selector_key *key) {
     size_t count;
     uint8_t *bufptr = buffer_write_ptr(&conn->read_buffer, &count);
 
-    ssize_t len = recv(conn->client_socket, bufptr, count, MSG_NOSIGNAL); // TODO ver por que nosignal
+    ssize_t len = recv(conn->client_socket, bufptr, count, MSG_NOSIGNAL);
 
     if (len <= 0) {
         return ERROR;
@@ -125,7 +126,8 @@ static unsigned authentication_read(struct selector_key *key) {
     }
 
     if (done) {
-        enum authenticationStatus status = authenticate_user(&parser->credentials);
+        conn->user = authenticate_user(&parser->credentials);
+        enum authenticationStatus status = conn->user == NULL ? AUTHENTICATION_STATUS_FAILED : AUTHENTICATION_STATUS_OK;
         if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE)
             || generate_authentication_response(&conn->write_buffer, status) == -1) {
             return ERROR;
@@ -207,7 +209,8 @@ static unsigned init_connection(struct requestParser *parser, socks5_connection 
             }
             return REQUEST_CONNECT;
         }
-        return ERROR;
+        perror("connect");
+        return setup_response_error(parser, connect_error_to_socks(errno), conn, key);
     }
     return ERROR; // TODO: ?
 }
@@ -215,9 +218,10 @@ static unsigned init_connection(struct requestParser *parser, socks5_connection 
 static void* request_resolv_thread(void * arg) {
     struct selector_key *key = (struct selector_key *) arg;
     socks5_connection * conn = (socks5_connection *)key->data;
+    int ret;
 
     pthread_detach(pthread_self());
-    struct addrinfo res = {
+    struct addrinfo hint = {
         .ai_family = AF_UNSPEC,
         .ai_socktype = SOCK_STREAM,
         .ai_flags = AI_PASSIVE,
@@ -229,8 +233,11 @@ static void* request_resolv_thread(void * arg) {
     char buf[7];
     snprintf(buf, sizeof buf, "%d", ntohs(conn->parser.request.request.port));
 
-    // TODO: handle error
-    getaddrinfo((char *) conn->parser.request.request.destination.fqdn, buf, &res, &conn->resolved_addr);
+    ret = getaddrinfo((char *) conn->parser.request.request.destination.fqdn, buf, &hint, &conn->resolved_addr);
+    if (ret) {
+        fprintf(stderr,"unable to get address info: %s", gai_strerror(ret));
+        conn->resolved_addr = NULL;
+    }
 
     conn->resolved_addr_current = conn->resolved_addr;
 
@@ -405,6 +412,8 @@ static unsigned request_write(struct selector_key *key) {
         return ERROR;
     }
     buffer_read_adv(&conn->write_buffer, len);
+    logger(LOG_ACCESS, conn);
+
     if (!buffer_can_read(&conn->write_buffer)) {
         if (parser->response.status != STATUS_SUCCEDED) {
             return DONE;
@@ -428,6 +437,7 @@ static void copy_init(unsigned state, struct selector_key *key) {
     c->rb = &conn->read_buffer;
     c->wb = &conn->write_buffer;
     c->interests = OP_READ;
+    c->connection_interests = OP_READ | OP_WRITE;
     c->other = &conn->origin_copy;
 
     c = &conn->origin_copy;
@@ -436,7 +446,16 @@ static void copy_init(unsigned state, struct selector_key *key) {
     c->rb = &conn->write_buffer;
     c->wb = &conn->read_buffer;
     c->interests = OP_READ;
+    c->connection_interests = OP_READ | OP_WRITE;
     c->other = &conn->client_copy;
+
+    if (dissector_is_on()) {
+        pop3_parser_init(&conn->pop3);
+        if (ntohs(conn->parser.request.request.port) == 110) {
+            // if the port is POP3's default port, we can skip the origin check to see if it's a POP3 server
+            skip_pop3_check(&conn->pop3);
+        }
+    }
 }
 
 static unsigned copy_read(struct selector_key *key) {
@@ -452,6 +471,7 @@ static unsigned copy_read(struct selector_key *key) {
 
     if(!buffer_can_write(c->wb)){
         c->interests &= ~OP_READ;
+        c->interests &= c->connection_interests;
         selector_set_interest(key->s, key->fd, c->interests);
         return COPY;
     }
@@ -462,17 +482,52 @@ static unsigned copy_read(struct selector_key *key) {
     ssize_t len = recv(key->fd, bufptr, wbytes, MSG_NOSIGNAL);
     if (len <= 0)
     {
-        //TODO: ver que onda
-        if (len == -1 && errno != EWOULDBLOCK) {
-            perror("SERVER READ ERROR");
-            return ERROR;
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // Shouldn't happen because of selector, but just in case
+            return COPY;
         }
+        if (len == -1) {
+            perror("SERVER READ ERROR");
+        }
+        // len == 0, EOF
+        c->connection_interests &= ~OP_READ;
+        c->interests &= c->connection_interests;
+        selector_set_interest(key->s, c->fd, c->interests);
+        shutdown(c->fd, SHUT_RD);
 
-        return DONE;
+        c->other->connection_interests &= ~OP_WRITE;
+        if (!buffer_can_read(c->wb)) {
+            c->other->interests &= c->other->connection_interests;
+            selector_set_interest(key->s, c->other->fd, c->other->interests);
+            shutdown(c->other->fd, SHUT_WR);
+        }
+        if (c->connection_interests == OP_NOOP && c->other->connection_interests == OP_NOOP) {
+            return DONE;
+        }
+        return COPY;
     }
     buffer_write_adv(c->wb, len);
 
+    if (dissector_is_on()) {
+        if (key->fd == conn->client_socket) {
+            if (do_pop3(conn->pop3.state)) {
+                while (len > 0) {
+                    if (pop3_parse(bufptr, &len, &conn->pop3) == POP3_DONE) {
+                        logger(LOG_PASSWORD, conn);
+                    }
+                }
+            }
+        } else if (key->fd == conn->origin_socket) {
+            if (conn->pop3.state == POP3_GREETING) {
+                check_pop3(bufptr, len, &conn->pop3);
+            }
+        } else {
+            return ERROR;
+        }
+    }
+
     c->other->interests |= OP_WRITE;
+    c->other->interests &= c->other->connection_interests;
     selector_set_interest(key->s, c->other->fd, c->other->interests);
 
     return COPY;
@@ -492,14 +547,14 @@ static unsigned copy_write(struct selector_key *key) {
     size_t rbytes;
     uint8_t *bufptr = buffer_read_ptr(c->rb, &rbytes);
 
-    ssize_t len = send(key->fd, bufptr, rbytes, MSG_DONTWAIT);
+    ssize_t len = send(key->fd, bufptr, rbytes, MSG_NOSIGNAL);
     if (len == -1)
     {
-        if (errno != EWOULDBLOCK)
-        {
+        if (errno != EWOULDBLOCK && errno != EAGAIN) {
             perror("SERVER WRITE FAILED");
             return ERROR;
         }
+        // Shouldn't happen because of selector, but just in case
         return COPY;
     }
 
@@ -507,11 +562,16 @@ static unsigned copy_write(struct selector_key *key) {
     report_transfer_bytes(len);
 
     c->other->interests |= OP_READ;
+    c->other->interests &= c->other->connection_interests;
     selector_set_interest(key->s, c->other->fd, c->other->interests);
 
-    if(!buffer_can_read(c->rb)){
+    if(!buffer_can_read(c->rb)) {
         c->interests &= ~OP_WRITE;
+        c->interests &= c->connection_interests;
         selector_set_interest(key->s, c->fd, c->interests);
+        if (!(c->connection_interests & OP_WRITE)) {
+            shutdown(c->fd, SHUT_WR);
+        }
     }
 
     return COPY;

@@ -26,25 +26,24 @@ sigterm_handler(const int signal) {
     exit(0);
 }
 
-int main(int argc, const char **argv) {
+int main(int argc, char* const *argv) {
     signal(SIGTERM, sigterm_handler);
     signal(SIGINT, sigterm_handler);
 
-    // TODO: remove when args are added
-    struct users users[MAX_USERS] = {
-        {"pepe", "pepe"}
-    };
-    initialize_users(users, 1);
+    struct socks5args args;
+    parse_args(argc, argv, &args);
 
     struct users shoesUsers[MAX_USERS] = {
         {"shoes", "shoes"}
     };
     initialize_shoes_users(shoesUsers, 1);
     // TODO Properly initialize_shoes_users();
-
     init_metrics();
-
-    int retcode = network_handler();
+    
+    int retcode = network_handler(args.socks_addr, args.socks_port, args.shoes_addr, args.shoes_port);
+    
     network_handler_cleanup();
+    free_users();
+
     return retcode;
 }

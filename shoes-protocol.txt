@@ -22,12 +22,11 @@
     in network byte order.
 
 
-
 2 Authentication
 
     Once the SHOES V1 server has started, and the client has selected the
     Username/Password Authentication protocol, the Username/Password
-    subnegotiation begins.  This begins with the client producing a
+    negotiation begins.  This begins with the client producing a
     Username/Password request:
 
             +-----+------+----------+------+----------+
@@ -37,11 +36,11 @@
             +-----+------+----------+------+----------+
 
     Where:
-            o VER    The protocol version number, currently X'01'.
-            o ULEN   The length of the username.
-            o UNAME  The username.
-            o PLEN   The length of the password.
-            o PASSWD The password.
+            o VER       The protocol version number, currently X'01'.
+            o ULEN      The length of the username.
+            o UNAME     The username.
+            o PLEN      The length of the password.
+            o PASSWD    The password.
 
     Both UNAME and PASSWD are in ISO/IEC 8859-1:1998 character set,
     also known as 8-bit ASCII.
@@ -67,7 +66,7 @@
 
 3 Requests
 
-    Once the autherization process has concluded, the client sends the
+    Once the authorization process has concluded, the client sends the
     request details.
 
     The SHOES request is formed as follows:
@@ -82,7 +81,7 @@
               o  FMLY   Family of the request.
                  o  GET Requests X'00'
                  o  PUT Requests X'01'
-              o  CMD    Identifies the command to be executed whithin
+              o  CMD    Identifies the command to be executed within
               the family specified.
               o  DATA   Contains the command specific data. Further details
               can be found in the following sections.
@@ -101,9 +100,8 @@
         The values currently defined for CMD in this family are:
 
                   o  X'00' SERVER METRICS
-                  o  X'03' LIST USERS
-                  o  X'04' LIST CREDENTIALS
-                  o  X'05' PASSWORD SPOOFING STATUS
+                  o  X'01' LIST USERS
+                  o  X'02' PASSWORD SPOOFING STATUS
 
         Section 4.1 goes into greater details on how the responses
         are formed.
@@ -125,7 +123,7 @@
                 o X'03' MODIFY BUFFER SIZE
                 o X'04' MODIFY PASSWORD SPOOFING STATUS
 
-        The requets formats are as follows:
+        The requests formats are as follows:
 
         3.2.1 ADD USER
             +---------+---------+------+----------+------+----------+
@@ -169,7 +167,7 @@
         3.2.4 MODIFY BUFFER SIZE
             +---------+---------+---------+
             |  FMLY   |   CMD   | BUFSIZE |
-            +---------+---------+---------+ // Máximo?
+            +---------+---------+---------+
             |  X'01'  |  X'03'  |    2    |
             +---------+---------+---------+
 
@@ -184,9 +182,9 @@
         3.2.5 MODIFY PASSWORD SPOOFING STATUS
             +---------+---------+------+
             |  FMLY   |   CMD   | SET  |
-            +---------+---------+------+ // Pedirle 1 o 0 en SET o cambiar el valor actual?
+            +---------+---------+------+
             |  X'01'  |  X'04'  |  1   |
-            +---------+---------+------+ // Aclarar bit o ASCII, obviamente bit
+            +---------+---------+------+
 
             Where SET is a 1 octet integer representing the password spoofing
             status. A value of X'00' indicates that the server should not
@@ -197,7 +195,7 @@
 
 4 Responses
 
-    As stated previoulsy, the server will return a different format
+    As stated previous, the server will return a different format
     depending on the command that was requested. The following sections
     go into greater details on how the replies are formed.
 
@@ -207,7 +205,7 @@
             o  X'01' General SHOES server failure
             o  X'02' FMLY not supported
             o  X'03' CMD not supported
-            o  X'04' CMD-specific failure status. See
+            o  X'04' and X'05' CMD-specific failure status. See
             the following sections for more details.
 
     If the server returns a failure (STATUS value other than X'00'),
@@ -262,11 +260,7 @@
     Each UNAME field will be in ISO/IEC 8859-1:1998 character set, also known
     as 8-bit ASCII.
 
-
-4.1.3 LIST CREDENTIALS
-// TODO
-
-4.1.4 PASSWORD SPOOFING STATUS
+4.1.3 PASSWORD SPOOFING STATUS
 
     The server will return the following reply:
 
@@ -280,7 +274,7 @@
             o STATUS    Status of the request.
             o SPOOF     Password spoofing status.
 
-    The field SPOOF contains one octect, which is either X'00' or X'01',
+    The field SPOOF contains one octet, which is either X'00' or X'01',
     representing the password spoofing status as disabled or enabled,
     respectively.
 
@@ -288,9 +282,9 @@
 
     The response to a PUT request contains the status of the request,
     which will be used to determine if the request was successful.
+
     In addition, responses to PUT requests can return a CMD-specific
     failure status, indicating a failure specific to the command.
-
     Therefore, a STATUS of X'04' indicates:
         o ADD USER              - The user already exists.
         o REMOVE USER           - The user does not exist.
@@ -298,6 +292,9 @@
         o MODIFY BUFFER SIZE    - The buffer size is out of range.
         o MODIFY PASSWORD SPOOFING STATUS - The password spoofing
         status is out of range.
+    In addition, a STATUS of X'05' indicates:
+        o ADD USER              - The maximum number of users has been
+        reached.
 
     See section 3.2 for more details in accepted values ranges for each
     command.

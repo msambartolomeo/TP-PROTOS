@@ -2,12 +2,7 @@
 #include <stdio.h>
 #include "connection.h"
 #include "socks5.h"
-
-static bool auth_required = false;
-
-void require_auth(bool required) {
-    auth_required = required;
-}
+#include "users.h"
 
 void connection_parser_init(struct connectionParser *parser) {
     parser->remaining = 0;
@@ -16,7 +11,7 @@ void connection_parser_init(struct connectionParser *parser) {
 }
 
 static enum connectionMethod choose_method(enum connectionMethod current, enum connectionMethod new) {
-    if (new == METHOD_USERNAME_PASSWORD || (!auth_required && (new == METHOD_NO_AUTHENTICATION_REQUIRED && current != METHOD_USERNAME_PASSWORD))) {
+    if (new == METHOD_USERNAME_PASSWORD || (!get_auth_state() && (new == METHOD_NO_AUTHENTICATION_REQUIRED && current != METHOD_USERNAME_PASSWORD))) {
         return new;
     }
     return current;

@@ -9,6 +9,8 @@
 #include "authentication.h"
 #include "request.h"
 #include "selector.h"
+#include "pswrdDiss.h"
+#include "users.h"
 
 static const uint8_t SOCKS_VERSION = 0x05;
 #define BUFFER_DEFAULT_SIZE 1024
@@ -32,6 +34,7 @@ struct Copy {
     int fd;
     buffer *rb, *wb;
     fd_interest interests;
+    fd_interest connection_interests;
     struct Copy *other;
 };
 
@@ -67,9 +70,15 @@ typedef struct socks5_connection {
         struct requestParser request;
     } parser;
 
+    // estructura para contraseñas de pop
+    struct pop3_parser pop3;
+
     // estructuras para usar en el estado de copy
     struct Copy client_copy;
     struct Copy origin_copy;
+
+    // usuario que creo la conexion
+    const struct users *user;
 
     // TODO: Parsers?
     // En la implementación de Coda también tiene ClientAddr, ServerAddr, resolución de nombre de origen, estados
