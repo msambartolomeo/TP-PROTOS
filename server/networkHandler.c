@@ -14,9 +14,6 @@
 #include "shoes.h"
 #include "metrics.h"
 
-#define DEFAULT_CLIENT_PORT 1080
-#define DEFAULT_SHOES_PORT 8080
-#define DEFAULT_SERVER_PORT 80
 #define SELECTOR_TIMEOUT 100
 #define DEFAULT_SOCKS_ADDR_IPV4 "0.0.0.0"
 #define DEFAULT_SOCKS_ADDR_IPV6 "::"
@@ -323,10 +320,10 @@ int network_handler(char *socks_addr, char *socks_port, char *shoes_addr, char *
     }
 
     if (socks_addr == NULL) {
-        if ((fd_socks = create_socket(socks_port, DEFAULT_SHOES_ADDR_IPV4, &passiveSocketFdHandler)) == -1) {
+        if ((fd_socks = create_socket(socks_port, DEFAULT_SOCKS_ADDR_IPV4, &passiveSocketFdHandler)) == -1) {
             goto finally;
         }
-        if ((fd_socks2 = create_socket(socks_port, DEFAULT_SHOES_ADDR_IPV6, &passiveSocketFdHandler)) == -1) {
+        if ((fd_socks2 = create_socket(socks_port, DEFAULT_SOCKS_ADDR_IPV6, &passiveSocketFdHandler)) == -1) {
             goto finally;
         }
     } else {
