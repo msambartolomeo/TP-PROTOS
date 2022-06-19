@@ -96,7 +96,7 @@ void parse_args(const int argc, char** argv, struct shoesArgs* args) {
     int c;
 
     while (true) {
-        c = getopt(argc, argv, "hl:ms:u:a:e:r:b:v");
+        c = getopt(argc, argv, "h:lms:u:a:e:r:b:v");
         if (c == -1)
             break;
 

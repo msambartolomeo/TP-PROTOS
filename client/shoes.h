@@ -51,7 +51,7 @@ typedef struct shoesServerMetrics {
 shoesResponseStatus shoesGetMetrics(shoesServerMetrics* metrics);
 
 typedef struct shoesUserList {
-    uint32_t n;
+    uint8_t uCount;
     char** users;
 } shoesUserList;
 shoesResponseStatus shoesGetUserList(shoesUserList* list);

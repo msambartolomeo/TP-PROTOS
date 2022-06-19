@@ -192,37 +192,25 @@ shoesResponseStatus shoesGetUserList(shoesUserList* list) {
         return status;
     }
 
-    uint16_t ulen;
-    if (recv(conn.fd, &ulen, sizeof(uint16_t), MSG_WAITALL) !=
-        sizeof(uint16_t)) {
-        perror("Userlist recv error");
+    if (recv(conn.fd, &list->uCount, 1, MSG_WAITALL) < 1) {
+        perror("User count recv error");
         return -1; // TODO
     }
 
-    char* usersBuf = malloc(ulen);
-    if (usersBuf == NULL) {
-        fprintf(stderr, "Out of memory.\n");
-        return -1; // TODO
+    uint8_t uLen;
+    list->users = malloc(list->uCount * sizeof(char *));
+    for (uint8_t i = 0; i < list->uCount ; i++) {
+        if (recv(conn.fd, &uLen, 1, MSG_WAITALL) < 1) {
+            perror("User len recv error");
+            return -1; // TODO
+        }
+        list->users[i] = malloc(uLen + 1);
+        list->users[i][uLen] = '\0';
+        if (recv(conn.fd, list->users[i], uLen, MSG_WAITALL) < uLen) {
+            perror("User name recv error");
+            return -1; // TODO
+        }
     }
-
-    if (recv(conn.fd, usersBuf, ulen, MSG_WAITALL) < ulen) {
-        perror("Userlist recv error");
-        return -1; // TODO
-    }
-
-    list->users = malloc(ulen * sizeof(char**));
-    if (list->users == NULL) {
-        fprintf(stderr, "Out of memory.\n");
-        return -1; // TODO
-    }
-
-    list->n = 0;
-    for (int i = 0; i < ulen; i++) {
-        if (i == 0 || usersBuf[i - 1] == 0)
-            list->users[list->n++] = &usersBuf[i];
-    }
-
-    list->users = realloc(list->users, list->n * sizeof(char**));
 
     lastStatus = status;
     return status;
@@ -333,7 +321,9 @@ void freeShoesUser(shoesUser* user) {
 }
 
 void freeShoesUserList(shoesUserList* list) {
-    free(list->users[0]);
+    for (uint8_t i = 0; i < list->uCount; i++) {
+        free(list->users[i]);
+    }
     free(list->users);
 }
 

@@ -12,8 +12,8 @@ static void listUsers() {
     }
 
     printf("\nUSERS:\n");
-    for (uint32_t i = 0; i < list.n; i++) {
-        printf("%s\n", list.users[i]);
+    for (uint8_t i = 0; i < list.uCount; i++) {
+        printf("%d: %s\n", i+1, list.users[i]);
     }
 
     freeShoesUserList(&list);
