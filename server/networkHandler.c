@@ -15,8 +15,6 @@
 #include "metrics.h"
 
 #define SELECTOR_TIMEOUT 100
-#define DEFAULT_SOCKS_ADDR_IPV4 "0.0.0.0"
-#define DEFAULT_SOCKS_ADDR_IPV6 "::"
 #define DEFAULT_SHOES_ADDR_IPV4 "127.0.0.1"
 #define DEFAULT_SHOES_ADDR_IPV6 "::1"
 
@@ -233,15 +231,15 @@ const struct fd_handler shoesPassiveSocketHandler = {shoes_passive_socket_handle
 
 static char *error_msg;
 
-static int create_socket(char *port, char *addr, const struct fd_handler *selector_handler) {
+static int create_socket(char *port, char *addr, const struct fd_handler *selector_handler, int family) {
     struct addrinfo hint, *res = NULL;
     int ret, fd;
     bool error = false;
 
     memset(&hint, 0, sizeof(hint));
 
-    hint.ai_family = PF_UNSPEC;
-    hint.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
+    hint.ai_family = family;
+    hint.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV | AI_PASSIVE;
 
     ret = getaddrinfo(addr, port, &hint, &res);
     if (ret) {
@@ -259,6 +257,12 @@ static int create_socket(char *port, char *addr, const struct fd_handler *select
 
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) == -1) {
         error_msg = "unable to set socket options";
+        error = true;
+        goto finally;
+    }
+
+    if (family == AF_INET6 && setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &(int){1}, sizeof(int)) == -1) {
+        error_msg = "unable to set socket to ipv6_only";
         error = true;
         goto finally;
     }
@@ -319,28 +323,24 @@ int network_handler(char *socks_addr, char *socks_port, char *shoes_addr, char *
         goto finally;
     }
 
+    if ((fd_socks = create_socket(socks_port, socks_addr, &passiveSocketFdHandler, AF_UNSPEC)) == -1) {
+        goto finally;
+    }
     if (socks_addr == NULL) {
-        if ((fd_socks = create_socket(socks_port, DEFAULT_SOCKS_ADDR_IPV4, &passiveSocketFdHandler)) == -1) {
-            goto finally;
-        }
-        if ((fd_socks2 = create_socket(socks_port, DEFAULT_SOCKS_ADDR_IPV6, &passiveSocketFdHandler)) == -1) {
-            goto finally;
-        }
-    } else {
-        if ((fd_socks = create_socket(socks_port, socks_addr, &passiveSocketFdHandler)) == -1) {
+        if ((fd_socks2 = create_socket(socks_port, NULL, &passiveSocketFdHandler, AF_INET6)) == -1) {
             goto finally;
         }
     }
 
     if (shoes_addr == NULL) {
-        if ((fd_shoes = create_socket(shoes_port, DEFAULT_SHOES_ADDR_IPV4, &shoesPassiveSocketHandler)) == -1) {
+        if ((fd_shoes = create_socket(shoes_port, DEFAULT_SHOES_ADDR_IPV4, &shoesPassiveSocketHandler, AF_INET)) == -1) {
             goto finally;
         }
-        if ((fd_shoes2 = create_socket(shoes_port, DEFAULT_SHOES_ADDR_IPV6, &shoesPassiveSocketHandler)) == -1) {
+        if ((fd_shoes2 = create_socket(shoes_port, DEFAULT_SHOES_ADDR_IPV6, &shoesPassiveSocketHandler, AF_INET6)) == -1) {
             goto finally;
         }
     } else {
-        if ((fd_shoes = create_socket(shoes_port, shoes_addr, &shoesPassiveSocketHandler)) == -1) {
+        if ((fd_shoes = create_socket(shoes_port, shoes_addr, &shoesPassiveSocketHandler, AF_UNSPEC)) == -1) {
             goto finally;
         }
     }
