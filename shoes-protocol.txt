@@ -1,4 +1,4 @@
-SHOES Protocol Version 1.0
+                        SHOES Protocol Version 1.0
 
 1 Introduction
 
@@ -241,20 +241,26 @@ SHOES Protocol Version 1.0
 4.1.2 LIST USERS
 
     The server will return the following reply:
+                +--------+--------+---------+----------+
+                | STATUS | UCOUNT | ULEN(n) | UNAME(n) |
+                +--------+--------+---------+----------+
+                |   1    |   1    |    1    | 1 to 255 |
+                +--------+--------+---------+----------+
 
-                +--------+------+----------+
-                | STATUS | ULEN |  USERS   |
-                +--------+------+----------+
-                |   1    |  4   | Variable |
-                +--------+------+----------+
     Where:
-            o STATUS    Status of the request.
-            o ULEN      Length of the USERS field.
-            o USERS     List of users.
+            o STATUS        Status of the request.
+            o UCOUNT        Number of users listed.
+            o ULEN(n)       Length of the UNAME(n) field.
+            o UNAME(n)      Username of the n-th user.
 
-    The USERS field is a list of usernames in ISO/IEC 8859-1:1998 character
-    set, also known as 8-bit ASCII. Each username is separated by a null
-    value.
+    The "n" in the above example is only shown for illustration purposes so
+    that the reader understands the structure of the reply. If no users
+    are listed, the server will return a reply with a UCOUNT of 0. If there
+    is at least one user listed, the server will return a ULEN and a UNAME
+    value for each user.
+
+    Each UNAME field will be in ISO/IEC 8859-1:1998 character set, also known
+    as 8-bit ASCII.
 
 
 4.1.3 LIST CREDENTIALS
