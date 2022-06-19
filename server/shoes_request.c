@@ -5,31 +5,42 @@
 #include "metrics.h"
 #include "users.h"
 
-bool writeResponse(buffer *buf, shoesResponse* response) {
-    if(!buffer_can_write(buf)) return false;
+enum writeResponseStatus writeResponse(buffer *buf, shoesResponse* response) {
+    if(!buffer_can_write(buf)) return WRITE_RESPONSE_FAIL;
 
-    size_t n;
-    uint8_t* bufPtr = buffer_write_ptr(buf, &n);
+    size_t available;
+    uint8_t* bufPtr = buffer_write_ptr(buf, &available);
 
-    size_t size = response->dataLen + 1;
-    if(n < size) return false;
+    size_t size = response->dataLen;
+    if(available < size) {
+        size = available;
+    }
 
-    *bufPtr++ = response->status;
-    memcpy(bufPtr, response->data, response->dataLen);
+    if (response->status == RESPONSE_SERV_FAIL) {
+        bufPtr[0] = RESPONSE_SERV_FAIL;
+        return WRITE_RESPONSE_SUCCESS;
+    }
+
+    memcpy(bufPtr, response->data, size);
 
     buffer_write_adv(buf, size);
 
-    //TODO
-    //if(response->dataLen > 0)
-    //    free(response->data);
+    response->dataLen -= size;
+    if (response->dataLen == 0) {
+        // Se imprimió toda la response
+        if (response->dataLen > 0)
+            free(response->data);
+        response->status = RESPONSE_SUCCESS;
+        response->data = NULL;
+        response->dataLen = 0;
 
-    //Clean response
-    free(response->data);
-    response->status = RESPONSE_SUCCESS;
-    response->data = NULL;
-    response->dataLen = 0;
-
-    return true;
+        return WRITE_RESPONSE_SUCCESS;
+    }
+    // Shiftear data hacia el inicio del puntero. Fíjese que ya reducimos dataLen.
+    for (size_t i = 0; i < response->dataLen; i++) {
+        response->data[i] = response->data[i + size];
+    }
+    return WRITE_RESPONSE_NOT_DONE;
 }
 
 // TODO: Al agregar un usuario programáticamente habría que agregar el NULL-termination
@@ -145,8 +156,9 @@ static void generateMetricsResponse(shoesResponse* response) {
     metrics[1] = get_concurrent_connections();
     metrics[2] = get_bytes_transferred();
 
-    response->data = (uint8_t *) metrics;
-    response->dataLen = sizeof(struct shoesMetrics);
+    response->data[0] = response->status;
+    memcpy(response->data + sizeof(uint8_t), metrics, 3 * sizeof(uint32_t));
+    response->dataLen = sizeof(struct shoesMetrics) + sizeof(uint8_t);
 }
 
 static void generateListResponse(shoesResponse* response) {
@@ -181,8 +193,18 @@ static void generateListResponse(shoesResponse* response) {
         memcpy(ptr + k, users[i].name, uLen);
         k += uLen;
     }
-    response->data = ptr;
-    response->dataLen = k;
+    response->data = malloc(k * sizeof(uint8_t) + sizeof(uint8_t));
+    if (response->data == NULL) {
+        response->status = RESPONSE_SERV_FAIL;
+        response->data = NULL;
+        response->dataLen = 0;
+        free(ptr);
+        return;
+    }
+    response->data[0] = response->status;
+    memcpy(response->data + sizeof(uint8_t), ptr, k * sizeof(uint8_t));
+    free(ptr);
+    response->dataLen = k+sizeof(uint8_t);
     response->status = RESPONSE_SUCCESS;
 }
 

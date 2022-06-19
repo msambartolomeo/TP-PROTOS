@@ -33,8 +33,8 @@ typedef struct shoes_connection {
     bool isAuthenticated;
 
     //Buffers
-    uint8_t raw_buffer_a[BUFFER_DEFAULT_SIZE];
-    uint8_t raw_buffer_b[BUFFER_DEFAULT_SIZE];
+    uint8_t raw_buffer_a[SHOES_BUFFER_DEFAULT_SIZE];
+    uint8_t raw_buffer_b[SHOES_BUFFER_DEFAULT_SIZE];
     buffer read_buffer;
     buffer write_buffer;
 

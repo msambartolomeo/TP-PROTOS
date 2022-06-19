@@ -116,5 +116,13 @@ typedef struct shoesParser {
 
 void shoes_request_parse(shoesParser * parser, buffer * buf);
 bool finished_request_parsing(shoesParser* parser);
-bool writeResponse(buffer *buf, shoesResponse* response);
+
+enum writeResponseStatus {
+    WRITE_RESPONSE_SUCCESS = 0x00,
+    WRITE_RESPONSE_FAIL = 0x01,
+    WRITE_RESPONSE_NOT_DONE = 0x02,
+};
+
+
+enum writeResponseStatus writeResponse(buffer *buf, shoesResponse* response);
 

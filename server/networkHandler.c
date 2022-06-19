@@ -196,8 +196,8 @@ static void shoes_passive_socket_handler(struct selector_key *key) {
     }
 
     memset(conn, 0, sizeof(shoes_connection));
-    buffer_init(&conn->read_buffer, BUFFER_DEFAULT_SIZE, conn->raw_buffer_a);
-    buffer_init(&conn->write_buffer, BUFFER_DEFAULT_SIZE, conn->raw_buffer_b);
+    buffer_init(&conn->read_buffer, SHOES_BUFFER_DEFAULT_SIZE, conn->raw_buffer_a);
+    buffer_init(&conn->write_buffer, SHOES_BUFFER_DEFAULT_SIZE, conn->raw_buffer_b);
 
     conn->stm.initial = SHOES_AUTHENTICATION_READ;
     conn->stm.max_state = SHOES_ERROR;

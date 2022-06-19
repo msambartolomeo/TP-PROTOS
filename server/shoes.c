@@ -109,9 +109,8 @@ static unsigned request_read(struct selector_key *key) {
     shoes_request_parse(parser, &conn->read_buffer);
 
     if (parser->state == PARSE_DONE) {
-        if(!writeResponse(&conn->write_buffer, &parser->response) ||
-            SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE)) {
-            fprintf(stderr, "Buffer out of space. This error should not be reachable.\n");
+        if(SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE)) {
+            fprintf(stderr, "Selector error.\n");
             return SHOES_ERROR;
         }
         return SHOES_REQUEST_WRITE;
@@ -124,6 +123,8 @@ static unsigned request_read(struct selector_key *key) {
 static unsigned request_write(struct selector_key *key) {
     shoes_connection *conn = (shoes_connection *) key->data;
 
+    enum writeResponseStatus status = writeResponse(&conn->write_buffer, &conn->parser.shoesRequestParser.response);
+
     size_t count;
     uint8_t *bufptr = buffer_read_ptr(&conn->write_buffer, &count);
 
@@ -132,8 +133,8 @@ static unsigned request_write(struct selector_key *key) {
         return SHOES_ERROR;
     }
     buffer_read_adv(&conn->write_buffer, len);
-    if (!buffer_can_read(&conn->write_buffer)) {
-        if(SELECTOR_SUCCESS != selector_set_interest_key(key, OP_READ)) {
+    if (!buffer_can_read(&conn->write_buffer) && status != WRITE_RESPONSE_NOT_DONE) {
+        if(SELECTOR_SUCCESS != selector_set_interest_key(key, OP_READ) || status == WRITE_RESPONSE_FAIL) {
             return SHOES_ERROR;
         }
         return SHOES_REQUEST_READ;
