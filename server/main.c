@@ -4,6 +4,7 @@
 #include <signal.h>
 #include "args.h"
 #include "users.h"
+#include "metrics.h"
 
 static void
 sigterm_handler(const int signal) {
@@ -32,7 +33,15 @@ int main(int argc, char* const *argv) {
     struct socks5args args;
     parse_args(argc, argv, &args);
 
+    struct users shoesUsers[MAX_USERS] = {
+        {"shoes", "shoes"}
+    };
+    initialize_shoes_users(shoesUsers, 1);
+    // TODO Properly initialize_shoes_users();
+    init_metrics();
+    
     int retcode = network_handler(args.socks_addr, args.socks_port, args.shoes_addr, args.shoes_port);
+    
     network_handler_cleanup();
     free_users();
 

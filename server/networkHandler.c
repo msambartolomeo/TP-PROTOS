@@ -11,7 +11,12 @@
 #include "selector.h"
 #include "stm.h"
 #include "socks5.h"
+#include "shoes.h"
+#include "metrics.h"
 
+#define DEFAULT_CLIENT_PORT 1080
+#define DEFAULT_SHOES_PORT 8080
+#define DEFAULT_SERVER_PORT 80
 #define SELECTOR_TIMEOUT 100
 #define DEFAULT_SOCKS_ADDR_IPV4 "0.0.0.0"
 #define DEFAULT_SOCKS_ADDR_IPV6 "::"
@@ -35,6 +40,25 @@ void close_connection(socks5_connection * connection)
         selector_unregister_fd(selector, server_socket);
         close(server_socket);
     }
+    if (client_socket != -1)
+    {
+        selector_unregister_fd(selector, client_socket);
+        close(client_socket);
+    }
+
+    buffer_reset(&connection->read_buffer);
+    buffer_reset(&connection->write_buffer);
+
+    free(connection);
+
+    report_closed_connection();
+    printf("CONNECTION CLOSED\n");
+}
+
+void close_shoes_connection(shoes_connection * connection)
+{
+    int client_socket = connection->client_socket;
+
     if (client_socket != -1)
     {
         selector_unregister_fd(selector, client_socket);
@@ -89,6 +113,36 @@ static const struct fd_handler connectionFdHandler = {
     .handle_close = connection_close,
 };
 
+static void shoesConnectionRead(struct selector_key *key) {
+    shoes_connection *conn = (shoes_connection *) key->data;
+    const enum shoes_state state = stm_handler_read(&conn->stm, key);
+
+    if (state == SHOES_ERROR) {
+        close_shoes_connection(conn);
+    }
+}
+
+static void shoesConnectionWrite(struct selector_key *key) {
+    shoes_connection *conn = (shoes_connection *) key->data;
+    const enum shoes_state state = stm_handler_write(&conn->stm, key);
+
+    if (state == SHOES_ERROR) {
+        close_shoes_connection(conn);
+    }
+}
+
+static void shoesConnectionClose(struct selector_key *key) {
+    shoes_connection *conn = (shoes_connection *) key->data;
+    stm_handler_close(&conn->stm, key);
+}
+
+static const struct fd_handler shoesConnectionFdHandler = {
+    .handle_read = shoesConnectionRead,
+    .handle_write = shoesConnectionWrite,
+    .handle_close = shoesConnectionClose,
+};
+
+
 const struct fd_handler *get_connection_fd_handler() {
     return &connectionFdHandler;
 }
@@ -133,10 +187,52 @@ static void passive_socket_handler(struct selector_key *key)
         return;
     }
 
+    report_new_connection();
     printf("NEW CONNECTION\n");
 }
 
+static void shoes_passive_socket_handler(struct selector_key *key) {
+    int fd = key->fd;
+
+    shoes_connection * conn = malloc(sizeof(struct shoes_connection));
+    if (conn == NULL) {
+        perror("malloc error");
+        return;
+    }
+
+    memset(conn, 0, sizeof(shoes_connection));
+    buffer_init(&conn->read_buffer, SHOES_BUFFER_DEFAULT_SIZE, conn->raw_buffer_a);
+    buffer_init(&conn->write_buffer, SHOES_BUFFER_DEFAULT_SIZE, conn->raw_buffer_b);
+
+    conn->stm.initial = SHOES_AUTHENTICATION_READ;
+    conn->stm.max_state = SHOES_ERROR;
+    conn->stm.states = get_shoes_states();
+
+    stm_init(&conn->stm);
+
+    conn->client_interests = OP_READ;
+
+    conn->client_socket = accept(fd, (struct sockaddr*)&conn->client_addr, &(socklen_t){sizeof(struct sockaddr_in)});
+    if (conn->client_socket == -1)
+    {
+        perror("Couldn't connect to client");
+        close_shoes_connection(conn);
+        return;
+    }
+    selector_fd_set_nio(conn->client_socket);
+
+    if (selector_register(selector, conn->client_socket, &shoesConnectionFdHandler, OP_READ, conn)) {
+        perror("selector_register error");
+        close_shoes_connection(conn);
+        return;
+    }
+
+    printf("NEW CONNECTION\n");
+
+}
+
 const struct fd_handler passiveSocketFdHandler = {passive_socket_handler, 0, 0, 0};
+const struct fd_handler shoesPassiveSocketHandler = {shoes_passive_socket_handler, 0, 0, 0};
 
 static char *error_msg;
 
@@ -238,7 +334,19 @@ int network_handler(char *socks_addr, char *socks_port, char *shoes_addr, char *
             goto finally;
         }
     }
-    // todo: create shoes sockets
+
+    if (shoes_addr == NULL) {
+        if ((fd_shoes = create_socket(shoes_port, DEFAULT_SHOES_ADDR_IPV4, &shoesPassiveSocketHandler)) == -1) {
+            goto finally;
+        }
+        if ((fd_shoes2 = create_socket(shoes_port, DEFAULT_SHOES_ADDR_IPV6, &shoesPassiveSocketHandler)) == -1) {
+            goto finally;
+        }
+    } else {
+        if ((fd_shoes = create_socket(shoes_port, shoes_addr, &shoesPassiveSocketHandler)) == -1) {
+            goto finally;
+        }
+    }
 
     while (1) {
         int selectorStatus = selector_select(selector);

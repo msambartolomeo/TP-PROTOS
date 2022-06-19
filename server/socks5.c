@@ -10,6 +10,7 @@
 #include "selector.h"
 #include "users.h"
 #include "networkHandler.h"
+#include "metrics.h"
 #include "logger.h"
 
 // CONNECTION_READ
@@ -558,6 +559,7 @@ static unsigned copy_write(struct selector_key *key) {
     }
 
     buffer_read_adv(c->rb, len);
+    report_transfer_bytes(len);
 
     c->other->interests |= OP_READ;
     c->other->interests &= c->other->connection_interests;
