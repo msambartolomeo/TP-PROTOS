@@ -11,8 +11,7 @@
 #include "selector.h"
 #include "shoes_request.h"
 
-
-#define BUFFER_DEFAULT_SIZE 1024
+#define SHOES_BUFFER_DEFAULT_SIZE 1024
 static const uint8_t SHOES_VERSION = 0x01;
 
 enum shoes_state {

@@ -334,7 +334,19 @@ int network_handler(char *socks_addr, char *socks_port, char *shoes_addr, char *
             goto finally;
         }
     }
-    // todo: create shoes sockets
+
+    if (shoes_addr == NULL) {
+        if ((fd_shoes = create_socket(shoes_port, DEFAULT_SHOES_ADDR_IPV4, &shoesPassiveSocketHandler)) == -1) {
+            goto finally;
+        }
+        if ((fd_shoes2 = create_socket(shoes_port, DEFAULT_SHOES_ADDR_IPV6, &shoesPassiveSocketHandler)) == -1) {
+            goto finally;
+        }
+    } else {
+        if ((fd_shoes = create_socket(shoes_port, shoes_addr, &shoesPassiveSocketHandler)) == -1) {
+            goto finally;
+        }
+    }
 
     while (1) {
         int selectorStatus = selector_select(selector);
