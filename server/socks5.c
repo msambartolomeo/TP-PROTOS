@@ -487,7 +487,6 @@ static unsigned copy_read(struct selector_key *key) {
         }
         if (len == -1) {
             perror("SERVER READ ERROR");
-            // TODO: segun lei si hay error hay que dejar que igual el otro siga vivo asi que saco el return pero ni idea
         }
         // len == 0, EOF
         c->connection_interests &= ~OP_READ;
@@ -568,7 +567,7 @@ static unsigned copy_write(struct selector_key *key) {
         c->interests &= ~OP_WRITE;
         c->interests &= c->connection_interests;
         selector_set_interest(key->s, c->fd, c->interests);
-        if (c->connection_interests & ~OP_WRITE) {
+        if (!(c->connection_interests & OP_WRITE)) {
             shutdown(c->fd, SHUT_WR);
         }
     }
