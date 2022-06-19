@@ -3,6 +3,7 @@
 
 #include "shoes_request.h"
 #include "metrics.h"
+#include "users.h"
 
 bool writeResponse(buffer *buf, shoesResponse* response) {
     if(!buffer_can_write(buf)) return false;
@@ -23,6 +24,7 @@ bool writeResponse(buffer *buf, shoesResponse* response) {
     //    free(response->data);
 
     //Clean response
+    free(response->data);
     response->status = RESPONSE_SUCCESS;
     response->data = NULL;
     response->dataLen = 0;
@@ -30,6 +32,7 @@ bool writeResponse(buffer *buf, shoesResponse* response) {
     return true;
 }
 
+// TODO: Al agregar un usuario programáticamente habría que agregar el NULL-termination
 static void shoes_parse_add_edit_user(shoesParser * parser, uint8_t byte) {
     switch (parser->putParser.addEditUserParser.state) {
         case PARSE_ADD_EDIT_USER_ULEN:
@@ -130,22 +133,57 @@ static void shoes_parse_modify_spoof(shoesParser * parser, uint8_t byte) {
 }
 
 static void generateMetricsResponse(shoesResponse* response) {
-    struct shoesMetrics * metrics = malloc(sizeof(struct shoesMetrics));
+    uint32_t * metrics = malloc(3 * sizeof(uint32_t));
     if(metrics == NULL) {
         response->status = RESPONSE_SERV_FAIL;
+        response->data = NULL;
+        response->dataLen = 0;
         return;
     }
 
-    metrics->historic_connections = get_historic_connections();
-    metrics->concurrent_connections = get_concurrent_connections();
-    metrics->bytes_transferred = get_bytes_transferred();
+    metrics[0] = get_historic_connections();
+    metrics[1] = get_concurrent_connections();
+    metrics[2] = get_bytes_transferred();
 
-    response->data = metrics;
+    response->data = (uint8_t *) metrics;
     response->dataLen = sizeof(struct shoesMetrics);
 }
 
 static void generateListResponse(shoesResponse* response) {
-    //TODO
+    uint8_t uCount = 0;
+    struct users * users = get_socks_users(&uCount);
+    if (uCount == 0) {
+        response->status = RESPONSE_SUCCESS;
+        response->data = NULL;
+        response->dataLen = 0;
+        return;
+    }
+    uint8_t * ptr = malloc(1);
+    if (ptr == NULL) {
+        response->status = RESPONSE_SERV_FAIL;
+        response->data = NULL;
+        response->dataLen = 0;
+        return;
+    }
+    ptr[0] = uCount;
+    size_t k = 1;
+    for (int i = 0; i < uCount; i++) {
+        size_t uLen = strlen(users[i].name);
+        ptr = realloc(ptr, (1 + uLen + k) * sizeof(uint8_t));
+        if (ptr == NULL) {
+            response->status = RESPONSE_SERV_FAIL;
+            response->data = NULL;
+            response->dataLen = 0;
+            free(ptr);
+            return;
+        }
+        ptr[k++] = uLen;
+        memcpy(ptr + k, users[i].name, uLen);
+        k += uLen;
+    }
+    response->data = ptr;
+    response->dataLen = k;
+    response->status = RESPONSE_SUCCESS;
 }
 
 static void generateSpoofResponse(shoesResponse* response) {

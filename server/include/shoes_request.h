@@ -94,7 +94,7 @@ typedef enum shoesResponseStatus {
 
 typedef struct shoesResponse {
     shoesResponseStatus status;
-    void * data;
+    uint8_t * data;
     size_t dataLen;
 } shoesResponse;
 

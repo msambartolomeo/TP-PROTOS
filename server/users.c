@@ -37,3 +37,8 @@ enum authenticationStatus authenticate_user(authentication_credentials *credenti
 enum authenticationStatus authenticate_shoes_user(authentication_credentials *credentials) {
     return authenticate_user_general(credentials, shoesUserDatabase, snUsers);
 }
+
+struct users * get_socks_users(uint8_t * n) {
+    *n = nUsers;
+    return userDatabase;
+}
