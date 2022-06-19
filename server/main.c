@@ -4,6 +4,7 @@
 #include <signal.h>
 #include "args.h"
 #include "users.h"
+#include "metrics.h"
 
 static void
 sigterm_handler(const int signal) {
@@ -40,6 +41,8 @@ int main(int argc, const char **argv) {
     };
     initialize_shoes_users(shoesUsers, 1);
     // TODO Properly initialize_shoes_users();
+
+    init_metrics();
 
     int retcode = network_handler();
     network_handler_cleanup();

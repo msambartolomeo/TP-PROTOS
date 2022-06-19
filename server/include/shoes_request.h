@@ -9,6 +9,12 @@
 #define BUFSIZE_MIN_LENGTH 512
 #define BUFSIZE_MAX_LENGTH 65535
 
+struct shoesMetrics {
+    uint32_t historic_connections;
+    uint32_t concurrent_connections;
+    uint32_t bytes_transferred;
+};
+
 enum shoesFamily {
     SHOES_GET = 0x00,
     SHOES_PUT = 0x01,

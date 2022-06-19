@@ -504,7 +504,7 @@ static unsigned copy_write(struct selector_key *key) {
     }
 
     buffer_read_adv(c->rb, len);
-    bytesTransferred += len;
+    report_transfer_bytes(len);
 
     c->other->interests |= OP_READ;
     selector_set_interest(key->s, c->other->fd, c->other->interests);

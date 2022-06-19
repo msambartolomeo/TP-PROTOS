@@ -1,6 +1,8 @@
-#include "shoes_request.h"
 #include <memory.h>
 #include <stdio.h>
+
+#include "shoes_request.h"
+#include "metrics.h"
 
 bool writeResponse(buffer *buf, shoesResponse* response) {
     if(!buffer_can_write(buf)) return false;
@@ -128,7 +130,18 @@ static void shoes_parse_modify_spoof(shoesParser * parser, uint8_t byte) {
 }
 
 static void generateMetricsResponse(shoesResponse* response) {
-    printf("BUENAS\n");
+    struct shoesMetrics * metrics = malloc(sizeof(struct shoesMetrics));
+    if(metrics == NULL) {
+        response->status = RESPONSE_SERV_FAIL;
+        return;
+    }
+
+    metrics->historic_connections = get_historic_connections();
+    metrics->concurrent_connections = get_concurrent_connections();
+    metrics->bytes_transferred = get_bytes_transferred();
+
+    response->data = metrics;
+    response->dataLen = sizeof(struct shoesMetrics);
 }
 
 static void generateListResponse(shoesResponse* response) {

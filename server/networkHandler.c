@@ -47,7 +47,7 @@ void close_connection(socks5_connection * connection)
 
     free(connection);
 
-    concurrentConnections--;
+    report_closed_connection();
     printf("CONNECTION CLOSED\n");
 }
 
@@ -182,8 +182,7 @@ static void passive_socket_handler(struct selector_key *key)
         return;
     }
 
-    historicConnections++;
-    concurrentConnections++;
+    report_new_connection();
     printf("NEW CONNECTION\n");
 }
 
