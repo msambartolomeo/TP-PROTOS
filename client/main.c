@@ -28,9 +28,10 @@ static void getServerMetrics() {
     }
 
     printf("\nServer Metrics: \n");
-    printf("Bytes Transerred: %d\n", metrics.bytesTransferred);
-    printf("Current Connections: %d\n", metrics.currentConnections);
-    printf("Historic Connections: %d\n", metrics.historicConnections);
+    printf("----------------\n");
+    printf("Historic Connections: %u\n", metrics.historicConnections);
+    printf("Current Connections: %u\n", metrics.currentConnections);
+    printf("Bytes Transferred: %u\n", metrics.bytesTransferred);
 }
 
 void getPasswordSpoofingStatus() {
