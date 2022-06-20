@@ -5,6 +5,7 @@
 #include "metrics.h"
 #include "users.h"
 #include "pswrdDiss.h"
+#include "socks5.h"
 
 enum writeResponseStatus writeResponse(buffer *buf, shoesResponse* response) {
     if(!buffer_can_write(buf)) return WRITE_RESPONSE_FAIL;
@@ -182,15 +183,11 @@ static void shoes_parse_remove_user(shoesParser * parser, uint8_t byte) {
 }
 
 static void shoes_parse_modify_buffer(shoesParser * parser, uint8_t byte) {
-    *(parser->putParser.modifyBufferParser.pointer++) = byte; // TODO: See endianness
+    *(parser->putParser.modifyBufferParser.pointer++) = byte;
     parser->putParser.modifyBufferParser.remaining--;
     if (parser->putParser.modifyBufferParser.remaining == 0) {
-        // TODO: Actually change the buffer size
-        printf("Modified buffer: %d\n",
-               parser->putParser.modifyBufferParser.bufferSize);
-
+        socksChangeBufSize(parser->putParser.modifyBufferParser.bufferSize);
         fillResponse(&parser->response, RESPONSE_SUCCESS, NULL, 0);
-
         parser->state = PARSE_DONE;
     }
 }
@@ -201,7 +198,7 @@ static void shoes_parse_modify_spoof(shoesParser * parser, uint8_t byte) {
     if (byte != false && byte != true) {
         status = RESPONSE_CMD_FAIL_04;
     } else {
-        // TODO: Actually modify spoofing status
+        change_dissector_state((bool)byte);
         status = RESPONSE_SUCCESS;
         printf("Modified spoofing: %d\n", byte);
     }

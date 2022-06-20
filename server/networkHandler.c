@@ -49,6 +49,8 @@ void close_connection(socks5_connection * connection)
     buffer_reset(&connection->read_buffer);
     buffer_reset(&connection->write_buffer);
 
+    free(connection->raw_buffer_a);
+    free(connection->raw_buffer_b);
     free(connection);
 
     report_closed_connection();
@@ -157,10 +159,14 @@ static void passive_socket_handler(struct selector_key *key)
         return;
     }
 
+    uint32_t bufSize = socksGetBufSize();
+
     // Inicializo el struct
     memset(conn, 0x00, sizeof(*conn));
-    buffer_init(&conn->read_buffer, BUFFER_DEFAULT_SIZE, conn->raw_buffer_a);
-    buffer_init(&conn->write_buffer, BUFFER_DEFAULT_SIZE, conn->raw_buffer_b);
+    conn->raw_buffer_a = malloc(bufSize);
+    conn->raw_buffer_b = malloc(bufSize);
+    buffer_init(&conn->read_buffer, bufSize, conn->raw_buffer_a);
+    buffer_init(&conn->write_buffer, bufSize, conn->raw_buffer_b);
 
     conn->stm.initial = CONNECTION_READ;
     conn->stm.max_state = DONE;

@@ -13,6 +13,17 @@
 #include "metrics.h"
 #include "logger.h"
 
+#define BUFFER_DEFAULT_SIZE 1024
+uint32_t bufSize = BUFFER_DEFAULT_SIZE;
+
+void socksChangeBufSize(uint32_t size) {
+    bufSize = size;
+}
+
+uint32_t socksGetBufSize() {
+    return bufSize;
+}
+
 // CONNECTION_READ
 static void connection_read_init(unsigned state, struct selector_key *key) {
     socks5_connection * conn = (socks5_connection *)key->data;
