@@ -85,6 +85,8 @@ void removeUsers(char** users, uint8_t len) {
         if (shoesRemoveUser(users[i]) != RESPONSE_SUCCESS) {
             fprintf(stderr, "Remove user error: %s",
                     shoesHumanReadableStatus()); // TODO: better error printing
+                    // TODO: @Agus esto falla cuando mandas un usuario inexistente, pero debería decir que no se pudo eliminar
+                    // porque no existe, no que falló.
             return;
         }
 

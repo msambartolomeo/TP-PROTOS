@@ -39,8 +39,8 @@ typedef enum shoesResponseStatus {
     RESPONSE_SERV_FAIL,
     RESPONSE_FMLY_NOT_SUPPORTED,
     RESPONSE_CMD_NOT_SUPPORTED,
-    RESPONSE_CMD_FAIL_1,
-    RESPONSE_CMD_FAIL_2,
+    RESPONSE_CMD_FAIL_04,
+    RESPONSE_CMD_FAIL_05,
 } shoesResponseStatus;
 
 typedef struct shoesServerMetrics {

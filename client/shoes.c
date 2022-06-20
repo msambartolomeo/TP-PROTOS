@@ -346,9 +346,9 @@ static const char* humanReadableCmdError(shoesResponseStatus status, shoesPutCom
     switch (putCommand) {
         case CMD_ADD_USER:
             switch (status) {
-                case RESPONSE_CMD_FAIL_1:
+                case RESPONSE_CMD_FAIL_04:
                     return "User already exists";
-                case RESPONSE_CMD_FAIL_2:
+                case RESPONSE_CMD_FAIL_05:
                     return "Maximum number of users reached";
                 default:
                     return "Unknown error";
@@ -375,8 +375,8 @@ static const char* humanReadableResponseStatus(shoesResponseStatus status, shoes
             return "Family not supported";
         case RESPONSE_CMD_NOT_SUPPORTED:
             return "Command not supported";
-        case RESPONSE_CMD_FAIL_1:
-        case RESPONSE_CMD_FAIL_2:
+        case RESPONSE_CMD_FAIL_04:
+        case RESPONSE_CMD_FAIL_05:
             return humanReadableCmdError(status, putCommand);
         default:
             return "Unknown error.";
