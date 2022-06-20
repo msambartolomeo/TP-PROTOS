@@ -7,7 +7,7 @@ static struct user *userDatabase[MAX_USERS];
 static uint8_t nUsers;
 static struct user *shoesUserDatabase[MAX_SHOES_USERS];
 static uint8_t snUsers;
-static bool auth_required = true;
+static bool auth_required = false;
 
 void free_users() {
     for (uint8_t i = 0; i < nUsers; i++) {
@@ -15,6 +15,8 @@ void free_users() {
         free(userDatabase[i]->pass);
         free(userDatabase[i]);
     }
+    nUsers = 0;
+    auth_required = false;
 }
 
 void initialize_shoes_users(struct user *users, uint8_t nusers) {
