@@ -506,9 +506,9 @@ static unsigned copy_read(struct selector_key *key) {
             return COPY;
         }
         if (len == -1) {
-            perror("SERVER READ ERROR");
+            // Read error, so we partialy close the connection
         }
-        // len == 0, EOF
+        // len == 0, EOF reached, so we partialy close the connection
         c->connection_interests &= ~OP_READ;
         c->interests &= c->connection_interests;
         selector_set_interest(key->s, c->fd, c->interests);
@@ -570,7 +570,7 @@ static unsigned copy_write(struct selector_key *key) {
     if (len == -1)
     {
         if (errno != EWOULDBLOCK && errno != EAGAIN) {
-            perror("SERVER WRITE FAILED");
+            // Cant write, so we close the connection
             return ERROR;
         }
         // Shouldn't happen because of selector, but just in case

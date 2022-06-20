@@ -267,7 +267,7 @@ static int create_socket(char *port, char *addr, const struct fd_handler *select
     }
 
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) == -1) {
-        error_msg = "unable to set socket options";
+        error_msg = "unable to set socket to reuse address";
         error = true;
         goto finally;
     }
@@ -279,13 +279,13 @@ static int create_socket(char *port, char *addr, const struct fd_handler *select
     }
 
     if (bind(fd, res->ai_addr, res->ai_addrlen) < 0) {
-        error_msg = "bind client socket error";
+        error_msg = "bind passive socket error";
         error = true;
         goto finally;
     }
 
     if (listen(fd, 1) < 0) {
-        error_msg = "listen client socket error";
+        error_msg = "listen passive socket error";
         error = true;
         goto finally;
     }
@@ -330,7 +330,7 @@ int network_handler(char *socks_addr, char *socks_port, char *shoes_addr, char *
 
     selector = selector_new(20);
     if (selector == NULL) {
-        error_msg = "No se pudo instanciar el selector.";
+        error_msg = "Error creating the selector";
         goto finally;
     }
 
@@ -385,8 +385,7 @@ finally:
     return ret;
 }
 
-void network_handler_cleanup()
-{
-    //close_connection(); TODO: Hacer close para todas las del selector
-    selector_close();
+void network_handler_cleanup() {
+    free_selector_data(selector);
+    selector_destroy(selector);
 }
