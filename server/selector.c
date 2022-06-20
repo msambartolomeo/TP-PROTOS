@@ -589,3 +589,29 @@ selector_fd_set_nio(const int fd) {
     }
     return ret;
 }
+
+void free_selector_data(fd_selector selector) {
+    void **data = malloc(selector->max_fd * sizeof(void *));
+    int count = 0;
+
+    for (int i = 0; i <= selector->max_fd; i++) {
+        bool freed = false;
+        struct item *item = selector->fds + i;
+        if(ITEM_USED(item) && item->data != NULL) {
+            for (int j = 0; j < count; ++j) {
+                if (data[j] == item->data) {
+                    // already freed
+                    freed = true;
+                    break;
+                }
+            }
+            if (!freed) {
+                data[count++] = item->data;
+                free(item->data);
+                item->data = NULL;
+            }
+        }
+    }
+
+    free(data);
+}

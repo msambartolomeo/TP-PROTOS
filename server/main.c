@@ -23,6 +23,7 @@ sigterm_handler(const int signal) {
 
     printf("\nsignal %s, cleaning up and exiting...\n",sigtype);
     network_handler_cleanup();
+    free_users();
     exit(0);
 }
 
