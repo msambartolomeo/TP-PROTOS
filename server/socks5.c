@@ -212,7 +212,7 @@ static unsigned init_connection(struct requestParser *parser, socks5_connection 
     if (connect(conn->origin_socket, (struct sockaddr *)&conn->origin_addr, conn->origin_addr_len) < 0) {
         if(errno == EINPROGRESS) {
             // key es la del cliente
-            if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_NOOP)) {
+            if (SELECTOR_SUCCESS != selector_set_interest(key->s, conn->client_socket, OP_NOOP)) {
                 return ERROR;
             }
             if (SELECTOR_SUCCESS != selector_register(key->s, conn->origin_socket, get_connection_fd_handler(), OP_WRITE, conn)) {
@@ -223,7 +223,14 @@ static unsigned init_connection(struct requestParser *parser, socks5_connection 
         perror("connect");
         return setup_response_error(parser, connect_error_to_socks(errno), conn, key);
     }
-    return ERROR; // TODO: ?
+    // connection was instantly established
+    if (SELECTOR_SUCCESS != selector_set_interest(key->s, conn->client_socket, OP_NOOP)) {
+        return ERROR;
+    }
+    if (SELECTOR_SUCCESS != selector_register(key->s, conn->origin_socket, get_connection_fd_handler(), OP_WRITE, conn)) {
+        return ERROR;
+    }
+    return REQUEST_CONNECT;
 }
 
 static void* request_resolv_thread(void * arg) {

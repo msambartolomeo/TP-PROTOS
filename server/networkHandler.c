@@ -100,16 +100,10 @@ static void connection_block(struct selector_key *key) {
     }
 }
 
-static void connection_close(struct selector_key *key) {
-    socks5_connection *conn = (socks5_connection *) key->data;
-    stm_handler_close(&conn->stm, key);
-}
-
 static const struct fd_handler connectionFdHandler = {
     .handle_read = connection_read,
     .handle_write = connection_write,
     .handle_block = connection_block,
-    .handle_close = connection_close,
 };
 
 static void shoesConnectionRead(struct selector_key *key) {
