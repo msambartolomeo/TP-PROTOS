@@ -53,7 +53,7 @@ void modifyBufSize(uint32_t size) {
         return;
     }
 
-    printf("Buffer size modified successfully\n");
+    printf("\nBuffer size modified successfully\n");
 }
 
 void addUsers(struct shoesUser* users, uint8_t len) {
@@ -64,7 +64,7 @@ void addUsers(struct shoesUser* users, uint8_t len) {
             return;
         }
 
-        printf("User '%s' added successfully\n", users[i].name);
+        printf("\nUser '%s' added successfully\n", users[i].name);
     }
 }
 
@@ -76,7 +76,7 @@ void editUsers(struct shoesUser* users, uint8_t len) {
             return;
         }
 
-        printf("User '%s' edited successfully\n", users[i].name);
+        printf("\nUser '%s' edited successfully\n", users[i].name);
     }
 }
 
@@ -88,7 +88,7 @@ void removeUsers(char** users, uint8_t len) {
             return;
         }
 
-        printf("User '%s' removed successfully\n", users[i]);
+        printf("\nUser '%s' removed successfully\n", users[i]);
     }
 }
 
@@ -100,7 +100,7 @@ void modifySpoofingStatus(bool newStatus) {
         return;
     }
 
-    printf("Spoofing status updated successfully\n");
+    printf("\nSpoofing status updated successfully\n");
 }
 
 int main(int argc, char** argv) {

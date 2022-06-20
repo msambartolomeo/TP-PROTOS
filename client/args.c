@@ -49,7 +49,8 @@ static void usage(const char* progname) {
             "   -l               Lista los usuarios.\n"
             "   -m               Muestra las métricas del servidor.\n"
             "   -s               Muestra el estado del password spoofing.\n"
-            "   -s <1/0>         Cambia el estado del password spoofing\n"
+            "   -s1              Enciende el password spoofing\n"
+            "   -s0              Desactiva el password spoofing\n"
             "   -b <size>        Cambia el tamaño del buffer\n"
             "   -a <name>:<pass> Agrega un nuevo usuario\n"
             "   -r <name>        Elimina un usuario\n"
@@ -62,6 +63,11 @@ static void usage(const char* progname) {
 }
 
 void spoof(const char* s, struct shoesArgs* args) {
+    if(s == NULL) {
+        args->getPasswordSpoofingStatus = true;
+        return;
+    }
+
     switch(*s) {
     case '1':
         args->modifySpoofingStatus = true;
@@ -96,7 +102,7 @@ void parse_args(const int argc, char** argv, struct shoesArgs* args) {
     int c;
 
     while (true) {
-        c = getopt(argc, argv, "h:lms:u:a:e:r:b:v");
+        c = getopt(argc, argv, "hlms::u:a:e:r:b:v");
         if (c == -1)
             break;
 
