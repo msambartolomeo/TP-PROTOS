@@ -3,10 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define DEFAULT_ADDR "127.0.0.1"
+#define DEFAULT_PORT "8080"
+
 static void listUsers() {
     shoesUserList list;
     if (shoesGetUserList(&list) != RESPONSE_SUCCESS) {
-        fprintf(stderr, "List Users Error: %s",
+        fprintf(stderr, "\nList Users Error: %s\n",
                 shoesHumanReadableStatus()); // TODO: better error printing
         return;
     }
@@ -22,7 +25,7 @@ static void listUsers() {
 static void getServerMetrics() {
     shoesServerMetrics metrics;
     if (shoesGetMetrics(&metrics) != RESPONSE_SUCCESS) {
-        fprintf(stderr, "Get Metrics Error: %s",
+        fprintf(stderr, "\nGet Metrics Error: %s\n",
                 shoesHumanReadableStatus()); // TODO: better error printing
         return;
     }
@@ -38,7 +41,7 @@ void getPasswordSpoofingStatus() {
     bool spoofStatus;
     if (shoesGetSpoofingStatus(&spoofStatus) !=
         RESPONSE_SUCCESS) {
-        fprintf(stderr, "Get spoof status error: %s",
+        fprintf(stderr, "\nGet spoof status error: %s\n",
                 shoesHumanReadableStatus()); // TODO: better error printing
         return;
     }
@@ -48,7 +51,7 @@ void getPasswordSpoofingStatus() {
 
 void modifyBufSize(uint32_t size) {
     if (shoesModifyBufferSize(size) != RESPONSE_SUCCESS) {
-        fprintf(stderr, "Modify bufsize error: %s",
+        fprintf(stderr, "\nModify bufsize error: %s\n",
                 shoesHumanReadableStatus()); // TODO: better error printing
         return;
     }
@@ -59,7 +62,7 @@ void modifyBufSize(uint32_t size) {
 void addUsers(struct shoesUser* users, uint8_t len) {
     for (int i = 0; i < len; i++) {
         if (shoesAddUser(&users[i]) != RESPONSE_SUCCESS) {
-            fprintf(stderr, "Add user error: %s",
+            fprintf(stderr, "\nAdd user error: %s\n",
                     shoesHumanReadableStatus()); // TODO: better error printing
             return;
         }
@@ -71,7 +74,7 @@ void addUsers(struct shoesUser* users, uint8_t len) {
 void editUsers(struct shoesUser* users, uint8_t len) {
     for (int i = 0; i < len; i++) {
         if (shoesEditUser(&users[i]) != RESPONSE_SUCCESS) {
-            fprintf(stderr, "Edit user error: %s",
+            fprintf(stderr, "\nEdit user error: %s\n",
                     shoesHumanReadableStatus()); // TODO: better error printing
             return;
         }
@@ -83,7 +86,7 @@ void editUsers(struct shoesUser* users, uint8_t len) {
 void removeUsers(char** users, uint8_t len) {
     for (int i = 0; i < len; i++) {
         if (shoesRemoveUser(users[i]) != RESPONSE_SUCCESS) {
-            fprintf(stderr, "Remove user error: %s",
+            fprintf(stderr, "\nRemove user error: %s\n",
                     shoesHumanReadableStatus()); // TODO: better error printing
                     // TODO: @Agus esto falla cuando mandas un usuario inexistente, pero debería decir que no se pudo eliminar
                     // porque no existe, no que falló.
@@ -97,7 +100,7 @@ void removeUsers(char** users, uint8_t len) {
 void modifySpoofingStatus(bool newStatus) {
     if (shoesModifyPasswordSpoofingStatus(newStatus) !=
         RESPONSE_SUCCESS) {
-        fprintf(stderr, "Modify spoofing status error: %s",
+        fprintf(stderr, "\nModify spoofing status error: %s\n",
                 shoesHumanReadableStatus()); // TODO: better error printing
         return;
     }
@@ -110,13 +113,23 @@ int main(int argc, char** argv) {
     parse_args(argc, argv, &args);
 
     if (args.authUser.name == NULL) {
-        fprintf(stderr, "Admin credentials not included.\n");
+        fprintf(stderr, "\nAdmin credentials not included.\n");
         return 1;
     }
 
-    if (shoesConnect("127.0.0.1", "8080", &args.authUser) !=
+    char* addr = DEFAULT_ADDR;
+    char* port = DEFAULT_PORT;
+
+    if(args.usePort) {
+        port = args.port;
+    }
+    if(args.useAddr) {
+        addr = args.addr;
+    }
+
+    if (shoesConnect(addr, port, &args.authUser) !=
         CONNECT_SUCCESS) {
-        fprintf(stderr, "Connect error: %s\n",
+        fprintf(stderr, "\nConnect error: %s\n",
                 shoesHumanReadableStatus());
         return 1;
     }
@@ -137,6 +150,8 @@ int main(int argc, char** argv) {
         removeUsers(args.removeUsers, args.nRemoveUsers);
     if (args.modifySpoofingStatus)
         modifySpoofingStatus(args.newSpoofingStatus);
+
+    shoesCloseConnection();
 
     return 0;
 }

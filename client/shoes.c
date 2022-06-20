@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include "shoes.h"
 
@@ -95,13 +96,15 @@ shoesConnectStatus shoesConnect(const char* host, const char* port,
 
     if (send(conn.fd, buf, buflen, 0) == -1) {
         perror("Handshake send error");
-        return CONNECT_SERV_FAIL; // TODO
+        connectStatus = CONNECT_SERV_FAIL;
+        return connectStatus; // TODO
     }
 
     // Wait full response
     if ((recv(conn.fd, buf, RES_LEN, MSG_WAITALL)) < RES_LEN) {
         perror("Handshake recv error");
-        return CONNECT_SERV_FAIL; // TODO
+        connectStatus = CONNECT_SERV_FAIL;
+        return connectStatus; // TODO
     }
 
     uint8_t serv_ver = (uint8_t)buf[0];
@@ -110,7 +113,11 @@ shoesConnectStatus shoesConnect(const char* host, const char* port,
     if (*(uint8_t*)buf != SHOES_VER) {
         fprintf(stderr, "Invalid server shoes version: %d\n", serv_ver);
         connectStatus = CONNECT_SERV_FAIL;
-        return CONNECT_SERV_FAIL;
+        return connectStatus;
+    }
+
+    if(serv_ret == CONNECT_SUCCESS) {
+        conn.initialized = true;
     }
 
     connectStatus = serv_ret;
@@ -119,7 +126,7 @@ shoesConnectStatus shoesConnect(const char* host, const char* port,
 
 static int sendRequest(shoesFamily fmly, uint8_t cmd, void* data,
                        size_t dataLen) {
-    uint8_t bufLen = dataLen + 2;
+    size_t bufLen = dataLen + 2;
     uint8_t buf[bufLen];
 
     buf[0] = (uint8_t)fmly;
@@ -244,7 +251,13 @@ static inline shoesResponseStatus shoesAddOrEditUser(const shoesUser* user,
                                                      shoesPutCommand cmd) {
     size_t ulen = strlen(user->name);
     size_t plen = strlen(user->pass);
-    uint8_t dataLen = ulen + plen + 2;
+
+    if(ulen > UINT8_MAX || plen > UINT8_MAX) {
+        //ESTO NO DEBERIA PASAR NUNCA
+        return -1;
+    }
+
+    size_t dataLen = ulen + plen + 2;
     uint8_t data[dataLen];
 
     data[0] = (uint8_t)ulen;
@@ -258,18 +271,19 @@ static inline shoesResponseStatus shoesAddOrEditUser(const shoesUser* user,
         return -1;
     }
 
-    lastStatus = getResponseStatus();
-    return lastStatus;
+    return getResponseStatus();
 }
 
 shoesResponseStatus shoesAddUser(const shoesUser* user) {
     lastCommand = CMD_ADD_USER;
-    return shoesAddOrEditUser(user, CMD_ADD_USER);
+    lastStatus = shoesAddOrEditUser(user, CMD_ADD_USER);
+    return lastStatus;
 }
 
 shoesResponseStatus shoesEditUser(const shoesUser* user) {
     lastCommand = CMD_EDIT_USER;
-    return shoesAddOrEditUser(user, CMD_EDIT_USER);
+    lastStatus = shoesAddOrEditUser(user, CMD_EDIT_USER);
+    return lastStatus;
 }
 
 shoesResponseStatus shoesRemoveUser(const char* user) {
@@ -325,6 +339,12 @@ void freeShoesUserList(shoesUserList* list) {
         free(list->users[i]);
     }
     free(list->users);
+}
+
+void shoesCloseConnection() {
+    if(conn.initialized) {
+        close(conn.fd);
+    }
 }
 
 const char* humanReadableConnectStatus(shoesConnectStatus status) {
@@ -390,3 +410,5 @@ const char* shoesHumanReadableStatus() {
 
     return humanReadableResponseStatus(lastStatus, lastCommand);
 }
+
+

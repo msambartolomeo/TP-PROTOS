@@ -10,6 +10,11 @@
 struct shoesArgs {
     struct shoesUser authUser;
 
+    bool useAddr;
+    bool usePort;
+    char* addr;
+    char* port;
+
     bool listUsers;
     bool getServerMetrics;
     bool getPasswordSpoofingStatus;

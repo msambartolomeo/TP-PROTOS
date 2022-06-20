@@ -67,5 +67,7 @@ shoesResponseStatus shoesModifyPasswordSpoofingStatus(bool status);
 
 const char* shoesHumanReadableStatus();
 
+void shoesCloseConnection();
+
 void freeShoesUser(shoesUser* user);
 void freeShoesUserList(shoesUserList* list);

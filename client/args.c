@@ -23,11 +23,19 @@
 static void user(char* s, struct shoesUser* user) {
     char* p = strchr(s, ':');
     if (p == NULL) {
-        fprintf(stderr, "Invalid user '%s'\n", s);
+        fprintf(stderr, "Invalid argument: '%s'.\n Missing password and/or user.\n", s);
         exit(1);
     } else {
         *p = 0;
         p++;
+
+        size_t ulen = strlen(s);
+        size_t plen = strlen(p);
+
+        if(ulen > UINT8_MAX || plen > UINT8_MAX) {
+            fprintf(stderr, "User or password is too long.\n");
+        }
+
         user->name = s;
         user->pass = p;
     }
@@ -46,7 +54,7 @@ static void usage(const char* progname) {
             "   -h               Imprime la ayuda y termina.\n"
             "   -u <name>:<pass> Usuario admin y contraseña para acceder al "
             "servidor SHOES\n"
-            "   -l               Lista los usuarios.\n"
+            "   -g               Lista los usuarios.\n"
             "   -m               Muestra las métricas del servidor.\n"
             "   -s               Muestra el estado del password spoofing.\n"
             "   -s1              Enciende el password spoofing\n"
@@ -55,6 +63,8 @@ static void usage(const char* progname) {
             "   -a <name>:<pass> Agrega un nuevo usuario\n"
             "   -r <name>        Elimina un usuario\n"
             "   -e <name>:<pass> Edita un usuario\n"
+            "   -l <FQDN/IP>     Dirección del proxy a configurar\n"
+            "   -p <puerto>      Puerto del servicio de management del proxy\n"
             "   -v               Imprime información sobre la versión de shoesc"
             "y termina.\n"
             "\n",
@@ -102,7 +112,7 @@ void parse_args(const int argc, char** argv, struct shoesArgs* args) {
     int c;
 
     while (true) {
-        c = getopt(argc, argv, "hlms::u:a:e:r:b:v");
+        c = getopt(argc, argv, "hgms::u:a:e:r:b:l:p:v");
         if (c == -1)
             break;
 
@@ -110,7 +120,7 @@ void parse_args(const int argc, char** argv, struct shoesArgs* args) {
         case 'h':
             usage("shoesc");
             break;
-        case 'l':
+        case 'g':
             args->listUsers = true;
             break;
         case 'm':
@@ -133,6 +143,14 @@ void parse_args(const int argc, char** argv, struct shoesArgs* args) {
             break;
         case 'b':
             buf(optarg, args);
+            break;
+        case 'p':
+            args->usePort = true;
+            args->port = optarg;
+            break;
+        case 'l':
+            args->useAddr = true;
+            args->addr = optarg;
             break;
         case 'v':
             version();
