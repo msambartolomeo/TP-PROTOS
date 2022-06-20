@@ -47,7 +47,6 @@ void close_connection(socks5_connection * connection)
     free(connection);
 
     report_closed_connection();
-    printf("CONNECTION CLOSED\n");
 }
 
 void close_shoes_connection(shoes_connection * connection)
@@ -65,7 +64,6 @@ void close_shoes_connection(shoes_connection * connection)
 
     free(connection);
 
-    printf("CONNECTION CLOSED\n");
 }
 
 // Hand connections to the state machine
@@ -183,7 +181,6 @@ static void passive_socket_handler(struct selector_key *key)
     }
 
     report_new_connection();
-    printf("NEW CONNECTION\n");
 }
 
 static void shoes_passive_socket_handler(struct selector_key *key) {
@@ -221,9 +218,6 @@ static void shoes_passive_socket_handler(struct selector_key *key) {
         close_shoes_connection(conn);
         return;
     }
-
-    printf("NEW CONNECTION\n");
-
 }
 
 const struct fd_handler passiveSocketFdHandler = {passive_socket_handler, 0, 0, 0};
