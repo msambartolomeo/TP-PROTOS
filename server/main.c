@@ -30,6 +30,8 @@ int main(int argc, char* const *argv) {
     signal(SIGTERM, sigterm_handler);
     signal(SIGINT, sigterm_handler);
 
+    close(STDIN_FILENO);
+
     struct socks5args args;
     parse_args(argc, argv, &args);
 

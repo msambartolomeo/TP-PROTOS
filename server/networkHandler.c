@@ -23,6 +23,9 @@
 #define DEFAULT_SHOES_ADDR_IPV4 "127.0.0.1"
 #define DEFAULT_SHOES_ADDR_IPV6 "::1"
 
+//Dejamos un FD para poder denegar conexiones. (accept y despues close)
+#define MAX_FDS 1023
+
 static fd_selector selector;
 
 static void networkSelectorSignalHandler()
@@ -53,8 +56,7 @@ void close_connection(socks5_connection * connection)
     free(connection->raw_buffer_b);
     free(connection);
 
-    report_closed_connection();
-    printf("CONNECTION CLOSED\n");
+    reportClosedSocksConnection();
 }
 
 void close_shoes_connection(shoes_connection * connection)
@@ -72,7 +74,7 @@ void close_shoes_connection(shoes_connection * connection)
 
     free(connection);
 
-    printf("CONNECTION CLOSED\n");
+    reportClosedShoesConnection();
 }
 
 // Hand connections to the state machine
@@ -153,6 +155,17 @@ static void passive_socket_handler(struct selector_key *key)
 {
     int fd = key->fd;
 
+    //Si no tenemos mas fds disponibles dropeamos la conexion.
+    //Nos guardamos 1 fd para hacer el accept y luego close.
+    size_t fdsInUse = getSocksCurrentConnections() * 2 + getShoesCurrentConnections() + 3;
+    if((MAX_FDS - fdsInUse) < 2) {
+        int newFd;
+        if((newFd = accept(fd, NULL, NULL)) != -1) {
+            close(newFd);
+        }
+        return;
+    }
+
     socks5_connection * conn = malloc(sizeof(struct socks5_connection));
     if (conn == NULL) {
         perror("malloc error");
@@ -193,8 +206,7 @@ static void passive_socket_handler(struct selector_key *key)
         return;
     }
 
-    report_new_connection();
-    printf("NEW CONNECTION\n");
+    reportNewSocksConnection();
 }
 
 static void shoes_passive_socket_handler(struct selector_key *key) {
@@ -233,8 +245,7 @@ static void shoes_passive_socket_handler(struct selector_key *key) {
         return;
     }
 
-    printf("NEW CONNECTION\n");
-
+    reportNewShoesConnection();
 }
 
 const struct fd_handler passiveSocketFdHandler = {passive_socket_handler, 0, 0, 0};

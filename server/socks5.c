@@ -247,6 +247,7 @@ static void* request_resolv_thread(void * arg) {
     ret = getaddrinfo((char *) conn->parser.request.request.destination.fqdn, buf, &hint, &conn->resolved_addr);
     if (ret) {
         fprintf(stderr,"unable to get address info: %s", gai_strerror(ret));
+        freeaddrinfo(conn->resolved_addr);
         conn->resolved_addr = NULL;
     }
 
@@ -570,7 +571,7 @@ static unsigned copy_write(struct selector_key *key) {
     }
 
     buffer_read_adv(c->rb, len);
-    report_transfer_bytes(len);
+    reportTransferBytes(len);
 
     c->other->interests |= OP_READ;
     c->other->interests &= c->other->connection_interests;

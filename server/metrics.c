@@ -1,34 +1,47 @@
 #include "metrics.h"
 
 static uint32_t historicConnections;
-static uint32_t concurrentConnections;
+static uint32_t socksCurrentConnections;
+static uint32_t shoesCurrentConnections;
 static uint64_t bytesTransferred;
 
 void init_metrics() {
     historicConnections = 0;
-    concurrentConnections = 0;
+    socksCurrentConnections = 0;
     bytesTransferred = 0;
 }
 
-void report_new_connection() {
+void reportNewSocksConnection() {
     historicConnections++;
-    concurrentConnections++;
+    socksCurrentConnections++;
 }
 
-void report_closed_connection() {
-    concurrentConnections--;
+void reportClosedSocksConnection() {
+    socksCurrentConnections--;
 }
 
-void report_transfer_bytes(uint64_t bytes) {
+void reportNewShoesConnection() {
+    shoesCurrentConnections++;
+}
+
+void reportClosedShoesConnection() {
+    shoesCurrentConnections--;
+}
+
+void reportTransferBytes(uint64_t bytes) {
     bytesTransferred += bytes;
 }
 
-uint32_t get_historic_connections() {
+uint32_t getHistoricConnections() {
     return historicConnections;
 }
-uint32_t get_concurrent_connections() {
-    return concurrentConnections;
+uint32_t getSocksCurrentConnections() {
+    return socksCurrentConnections;
 }
-uint64_t get_bytes_transferred() {
+uint64_t getBytesTransferred() {
     return bytesTransferred;
+}
+
+uint32_t getShoesCurrentConnections() {
+    return shoesCurrentConnections;
 }

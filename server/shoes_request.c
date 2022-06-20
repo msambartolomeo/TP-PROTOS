@@ -215,9 +215,9 @@ static void generateMetricsResponse(shoesResponse* response) {
         return;
     }
 
-    metrics[0] = get_historic_connections();
-    metrics[1] = get_concurrent_connections();
-    uint64_t bytesTransferred = get_bytes_transferred();
+    metrics[0] = getHistoricConnections();
+    metrics[1] = getSocksCurrentConnections();
+    uint64_t bytesTransferred = getBytesTransferred();
     memcpy(&metrics[2], &bytesTransferred, sizeof(uint64_t));
 
     fillResponse(response, RESPONSE_SUCCESS, (uint8_t*)metrics, metricsSize);
