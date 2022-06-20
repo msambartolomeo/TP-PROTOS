@@ -46,7 +46,7 @@ typedef enum shoesResponseStatus {
 typedef struct shoesServerMetrics {
     uint32_t historicConnections;
     uint32_t currentConnections;
-    uint32_t bytesTransferred;
+    uint64_t bytesTransferred;
 } shoesServerMetrics;
 shoesResponseStatus shoesGetMetrics(shoesServerMetrics* metrics);
 

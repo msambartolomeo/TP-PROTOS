@@ -165,7 +165,7 @@ static void shoes_parse_modify_spoof(shoesParser * parser, uint8_t byte) {
 }
 
 static void generateMetricsResponse(shoesResponse* response) {
-    const size_t metricsSize = 3 * sizeof(uint32_t);
+    const size_t metricsSize = 2 * sizeof(uint32_t) + sizeof(uint64_t);
     uint32_t * metrics = malloc(metricsSize);
     if(metrics == NULL) {
         fillResponse(response, RESPONSE_SERV_FAIL, NULL, 0);
@@ -174,7 +174,8 @@ static void generateMetricsResponse(shoesResponse* response) {
 
     metrics[0] = get_historic_connections();
     metrics[1] = get_concurrent_connections();
-    metrics[2] = get_bytes_transferred();
+    uint64_t bytesTransferred = get_bytes_transferred();
+    memcpy(&metrics[2], &bytesTransferred, sizeof(uint64_t));
 
     fillResponse(response, RESPONSE_SUCCESS, (uint8_t*)metrics, metricsSize);
 }

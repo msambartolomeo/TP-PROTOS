@@ -153,7 +153,7 @@ static uint8_t getResponseStatus() {
 }
 
 shoesResponseStatus shoesGetMetrics(shoesServerMetrics* metrics) {
-    const int RES_LEN = 12;
+    const int RES_LEN = 16;
 
     if (sendGetRequest(CMD_METRICS) == -1) {
         fprintf(stderr, "Metrics request error\n");
@@ -174,7 +174,7 @@ shoesResponseStatus shoesGetMetrics(shoesServerMetrics* metrics) {
 
     metrics->historicConnections = *(uint32_t*)&buf[0];
     metrics->currentConnections = *(uint32_t*)&buf[4];
-    metrics->bytesTransferred = *(uint32_t*)&buf[8];
+    metrics->bytesTransferred = *(uint64_t*)&buf[8];
 
     lastStatus = status;
     return status;
