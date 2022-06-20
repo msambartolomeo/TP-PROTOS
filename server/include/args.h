@@ -4,8 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MAX_USERS 10
-
 struct socks5args {
     char *socks_addr;
     char *socks_port;

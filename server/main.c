@@ -33,7 +33,7 @@ int main(int argc, char* const *argv) {
     struct socks5args args;
     parse_args(argc, argv, &args);
 
-    struct users shoesUsers[MAX_USERS] = {
+    struct user shoesUsers[MAX_USERS] = {
         {"shoes", "shoes"}
     };
     initialize_shoes_users(shoesUsers, 1);

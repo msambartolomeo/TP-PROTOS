@@ -20,7 +20,7 @@ static char *port(char *s) {
     return s;
 }
 
-static void user(char *s, struct users *user) {
+static void parse_and_add(char *s) {
     char *p = strchr(s, ':');
     if(p == NULL) {
         fprintf(stderr, "password not found\n");
@@ -28,8 +28,19 @@ static void user(char *s, struct users *user) {
     } else {
         *p = 0;
         p++;
-        user->name = s;
-        user->pass = p;
+        switch (addUser(s, p)) {
+            case ADD_USER_SUCCESS:
+                return;
+            case ADD_USER_ALREADY_EXISTS: // TODO: Liberar memoria
+                fprintf(stderr, "User %s already exists, added only once\n", s);
+                return; // No se agrega el usuario y se sigue como si nada
+            case ADD_USER_MAX_REACHED:
+                fprintf(stderr, "Maximum number of users exceeded\n");
+                exit(1); // TODO: Esto o no agregarlo y seguir
+            case ADD_USER_SERV_ERROR:
+                fprintf(stderr, "Unkown error adding user\n");
+                exit(1);
+        }
     }
 }
 
@@ -64,23 +75,14 @@ void parse_args(int argc, char* const *argv, struct socks5args *args) {
     args->shoes_port   = "8080";
 
     int c;
-
-    int nusers = 0;
-    struct users *users = malloc(sizeof(struct users) * MAX_USERS);
-    if (users == NULL) {
-      fprintf(stderr, "Error allocating memory for user database\n");
-      exit(1);
-    }
-
     while (true) {
         c = getopt(argc, argv, "hl:L:Np:P:u:v");
         if (c == -1)
             break;
-
+        // TODO: Ahora no hay más free(users) cuando hay error, habría que ver si hace falta el free_users()
         switch (c) {
             case 'h':
                 usage(argv[0]);
-                free(users);
                 exit(0);
             case 'l':
                 args->socks_addr = optarg;
@@ -94,34 +96,23 @@ void parse_args(int argc, char* const *argv, struct socks5args *args) {
             case 'p':
                 args->socks_port = port(optarg);
                 if (args->socks_port == NULL) {
-                    free(users);
                     exit(1);
                 }
                 break;
             case 'P':
                 args->shoes_port = port(optarg);
                 if (args->shoes_port == NULL) {
-                    free(users);
                     exit(1);
                 }
                 break;
             case 'u':
-                if(nusers >= MAX_USERS) {
-                    fprintf(stderr, "maximum number of command line users reached: %d.\n", MAX_USERS);
-                    free(users);
-                    exit(1);
-                } else {
-                    user(optarg, users + nusers);
-                    nusers++;
-                }
+                parse_and_add(optarg);
                 break;
             case 'v':
                 version();
-                free(users);
                 exit(0);
             default:
                 fprintf(stderr, "unknown argument %d.\n", c);
-                free(users);
                 exit(1);
         }
 
@@ -132,9 +123,6 @@ void parse_args(int argc, char* const *argv, struct socks5args *args) {
             fprintf(stderr, "%s ", argv[optind++]);
         }
         fprintf(stderr, "\n");
-        free(users);
         exit(1);
     }
-
-    initialize_users(users, nusers);
 }
