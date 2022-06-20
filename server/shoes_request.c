@@ -59,12 +59,51 @@ static inline void fillResponse(shoesResponse* response, shoesResponseStatus sta
     response->remaining = dataSize + sizeof(uint8_t);
 }
 
+static void request_add_user(shoesParser *parser) {
+    enum addUserResponse addStatus = addUser((char *) parser->putParser.addEditUserParser.username,(char *) parser->putParser.addEditUserParser.password);
+    enum shoesResponseStatus responseStatus;
+    switch (addStatus) {
+        case ADD_USER_SUCCESS:
+            responseStatus = RESPONSE_SUCCESS;
+            break;
+        case ADD_USER_ALREADY_EXISTS:
+            responseStatus = RESPONSE_CMD_FAIL_04;
+            break;
+        case ADD_USER_MAX_REACHED:
+            responseStatus = RESPONSE_CMD_FAIL_05;
+            break;
+        case ADD_USER_SERV_ERROR:
+        default:
+            responseStatus = RESPONSE_SERV_FAIL;
+            break;
+    }
+    fillResponse(&parser->response, responseStatus, NULL, 0);
+}
+
+static void request_edit_user(shoesParser *parser) {
+    enum editUserResponse editStatus = editUser((char *) parser->putParser.addEditUserParser.username,(char *) parser->putParser.addEditUserParser.password);
+    enum shoesResponseStatus responseStatus;
+    switch (editStatus) {
+        case EDIT_USER_SUCCESS:
+            responseStatus = RESPONSE_SUCCESS;
+            break;
+        case EDIT_USER_NOT_FOUND:
+            responseStatus = RESPONSE_CMD_FAIL_04;
+            break;
+        case EDIT_USER_SERV_ERROR:
+        default:
+            responseStatus = RESPONSE_SERV_FAIL;
+            break;
+    }
+    fillResponse(&parser->response, responseStatus, NULL, 0);
+}
+
 // TODO: Al agregar un usuario programáticamente habría que agregar el NULL-termination
 static void shoes_parse_add_edit_user(shoesParser * parser, uint8_t byte) {
     switch (parser->putParser.addEditUserParser.state) {
         case PARSE_ADD_EDIT_USER_ULEN:
             if (byte == 0) {
-                parser->response.status = RESPONSE_CMD_FAIL_1;
+                parser->response.status = RESPONSE_CMD_FAIL_04;
                 parser->state = PARSE_DONE;
                 break;
             }
@@ -83,7 +122,7 @@ static void shoes_parse_add_edit_user(shoesParser * parser, uint8_t byte) {
             break;
         case PARSE_ADD_EDIT_USER_PLEN:
             if (byte == 0) {
-                parser->response.status = RESPONSE_CMD_FAIL_1;
+                parser->response.status = RESPONSE_CMD_FAIL_04;
                 parser->state = PARSE_DONE;
                 break;
             }
@@ -96,10 +135,18 @@ static void shoes_parse_add_edit_user(shoesParser * parser, uint8_t byte) {
             *(parser->putParser.addEditUserParser.pointer++) = byte;
             parser->putParser.addEditUserParser.remaining--;
             if (parser->putParser.addEditUserParser.remaining <= 0) {
-                // TODO: Add/Edit user
-                printf("Added user '%s' with pass '%s'\n",
-                       parser->putParser.addEditUserParser.username,
-                       parser->putParser.addEditUserParser.password);
+                switch (parser->cmd.put) {
+                    case CMD_ADD_USER:
+                        request_add_user(parser);
+                        break;
+                    case CMD_EDIT_USER:
+                        request_edit_user(parser);
+                        break;
+                    default:
+                        fillResponse(&parser->response, RESPONSE_SERV_FAIL, NULL, 0);
+                        parser->state = PARSE_DONE;
+                        break;
+                }
                 parser->state = PARSE_DONE;
             }
             break;
@@ -110,7 +157,7 @@ static void shoes_parse_remove_user(shoesParser * parser, uint8_t byte) {
     switch (parser->putParser.removeUserParser.state) {
         case PARSE_REMOVE_USER_ULEN:
             if (byte == 0) {
-                parser->response.status = RESPONSE_CMD_FAIL_1;
+                parser->response.status = RESPONSE_CMD_FAIL_04;
                 parser->state =  PARSE_DONE;
                 break;
             }
@@ -122,13 +169,12 @@ static void shoes_parse_remove_user(shoesParser * parser, uint8_t byte) {
             *(parser->putParser.removeUserParser.pointer++) = byte;
             parser->putParser.removeUserParser.remaining--;
             if (parser->putParser.removeUserParser.remaining <= 0) {
-                // TODO: Remove user and check for errors
-                // TODO: Send status 0x00 if no errors, 0x04 if errors
-
-                printf("Removed user '%s'\n",
-                       parser->putParser.removeUserParser.username);
-
-                parser->response.status = RESPONSE_SUCCESS;
+                if (removeUser((char *) parser->putParser.removeUserParser.username)) {
+                    fillResponse(&parser->response, RESPONSE_SUCCESS, NULL, 0);
+                }
+                else {
+                    fillResponse(&parser->response, RESPONSE_CMD_FAIL_04, NULL, 0);
+                }
                 parser->state = PARSE_DONE;
             }
             break;
@@ -153,7 +199,7 @@ static void shoes_parse_modify_spoof(shoesParser * parser, uint8_t byte) {
     shoesResponseStatus status;
 
     if (byte != false && byte != true) {
-        status = RESPONSE_CMD_FAIL_1;
+        status = RESPONSE_CMD_FAIL_04;
     } else {
         // TODO: Actually modify spoofing status
         status = RESPONSE_SUCCESS;
@@ -182,7 +228,7 @@ static void generateMetricsResponse(shoesResponse* response) {
 
 static void generateListResponse(shoesResponse* response) {
     uint8_t uCount = 0;
-    struct users * users = get_socks_users(&uCount);
+    struct user ** users = get_socks_users(&uCount);
     if (uCount == 0) {
         fillResponse(response, RESPONSE_SUCCESS, NULL, 0);
         return;
@@ -196,7 +242,7 @@ static void generateListResponse(shoesResponse* response) {
     ptr[0] = uCount;
     size_t k = 1;
     for (int i = 0; i < uCount; i++) {
-        size_t uLen = strlen(users[i].name);
+        size_t uLen = strlen(users[i]->name);
         ptr = realloc(ptr, (1 + uLen + k) * sizeof(uint8_t));
         if (ptr == NULL) {
             fillResponse(response, RESPONSE_SERV_FAIL, NULL, 0);
@@ -204,7 +250,7 @@ static void generateListResponse(shoesResponse* response) {
             return;
         }
         ptr[k++] = uLen;
-        memcpy(ptr + k, users[i].name, uLen);
+        memcpy(ptr + k, users[i]->name, uLen);
         k += uLen;
     }
 
@@ -260,9 +306,15 @@ static void shoes_request_parse_byte(shoesParser* parser, uint8_t byte) {
         case SHOES_PUT:
             switch (byte) {
             case CMD_ADD_USER:
+                parser->state = PARSE_DATA;
+                    parser->cmd.put = CMD_ADD_USER;
+                    parser->putParser.addEditUserParser.state =
+                            PARSE_ADD_EDIT_USER_ULEN;
+                    parser->parse = shoes_parse_add_edit_user;
+                    break;
             case CMD_EDIT_USER:
                 parser->state = PARSE_DATA;
-                parser->cmd.put = CMD_ADD_USER;
+                parser->cmd.put = CMD_EDIT_USER;
                 parser->putParser.addEditUserParser.state =
                     PARSE_ADD_EDIT_USER_ULEN;
                 parser->parse = shoes_parse_add_edit_user;
