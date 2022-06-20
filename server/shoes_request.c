@@ -21,14 +21,14 @@ enum writeResponseStatus writeResponse(buffer *buf, shoesResponse* response) {
         size_t writtenStatus = 0;
         if(response->remaining == response->dataSize + sizeof(uint8_t)) {
             *bufPtr++ = response->status;
-            response->remaining--;
             writtenStatus = sizeof(uint8_t);
         }
 
-        size_t index = response->dataSize - response->remaining;
-        memcpy(bufPtr, &response->data[index], size - writtenStatus);
-        buffer_write_adv(buf, (ssize_t)(size + writtenStatus));
-        response->remaining -= (size + writtenStatus);
+        size_t index = response->dataSize - (response->remaining - writtenStatus);
+        if (size > 1)
+            memcpy(bufPtr, &response->data[index], size - writtenStatus);
+        buffer_write_adv(buf, (ssize_t)size);
+        response->remaining -= (size - writtenStatus);
     }
 
     //if (response->status == RESPONSE_SERV_FAIL) {
@@ -143,22 +143,24 @@ static void shoes_parse_modify_buffer(shoesParser * parser, uint8_t byte) {
         printf("Modified buffer: %d\n",
                parser->putParser.modifyBufferParser.bufferSize);
 
-        fillResponse(parser->response, RESPONSE_SUCCESS, NULL, 0);
-        parser->response.status = RESPONSE_SUCCESS;
+        fillResponse(&parser->response, RESPONSE_SUCCESS, NULL, 0);
 
         parser->state = PARSE_DONE;
     }
 }
 
 static void shoes_parse_modify_spoof(shoesParser * parser, uint8_t byte) {
+    shoesResponseStatus status;
+
     if (byte != false && byte != true) {
-        parser->response.status = RESPONSE_CMD_FAIL_1; //TODO: Better status
+        status = RESPONSE_CMD_FAIL_1;
     } else {
         // TODO: Actually modify spoofing status
-        parser->response.status = RESPONSE_SUCCESS;
+        status = RESPONSE_SUCCESS;
         printf("Modified spoofing: %d\n", byte);
     }
 
+    fillResponse(&parser->response, status, NULL, 0);
     parser->state = PARSE_DONE;
 }
 
@@ -166,9 +168,7 @@ static void generateMetricsResponse(shoesResponse* response) {
     const size_t metricsSize = 3 * sizeof(uint32_t);
     uint32_t * metrics = malloc(metricsSize);
     if(metrics == NULL) {
-        response->status = RESPONSE_SERV_FAIL;
-        response->data = NULL;
-        response->dataSize = 0;
+        fillResponse(response, RESPONSE_SERV_FAIL, NULL, 0);
         return;
     }
 
@@ -183,16 +183,13 @@ static void generateListResponse(shoesResponse* response) {
     uint8_t uCount = 0;
     struct users * users = get_socks_users(&uCount);
     if (uCount == 0) {
-        response->status = RESPONSE_SUCCESS;
-        response->data = NULL;
-        response->dataSize = 0;
+        fillResponse(response, RESPONSE_SUCCESS, NULL, 0);
         return;
     }
+
     uint8_t * ptr = malloc(1);
     if (ptr == NULL) {
-        response->status = RESPONSE_SERV_FAIL;
-        response->data = NULL;
-        response->dataSize = 0;
+        fillResponse(response, RESPONSE_SERV_FAIL, NULL, 0);
         return;
     }
     ptr[0] = uCount;
@@ -201,9 +198,7 @@ static void generateListResponse(shoesResponse* response) {
         size_t uLen = strlen(users[i].name);
         ptr = realloc(ptr, (1 + uLen + k) * sizeof(uint8_t));
         if (ptr == NULL) {
-            response->status = RESPONSE_SERV_FAIL;
-            response->data = NULL;
-            response->dataSize = 0;
+            fillResponse(response, RESPONSE_SERV_FAIL, NULL, 0);
             free(ptr);
             return;
         }
@@ -211,22 +206,8 @@ static void generateListResponse(shoesResponse* response) {
         memcpy(ptr + k, users[i].name, uLen);
         k += uLen;
     }
-    response->data = malloc((k + 1) * sizeof(uint8_t));
-    if (response->data == NULL) {
-        response->status = RESPONSE_SERV_FAIL;
-        response->data = NULL;
-        response->dataSize = 0;
-        free(ptr);
-        return;
-    }
 
-    fillResponse(response, )
-
-    response->data[0] = response->status;
-    memcpy(response->data + sizeof(uint8_t), ptr, k * sizeof(uint8_t));
-    free(ptr);
-    response->dataSize = k+sizeof(uint8_t);
-    response->status = RESPONSE_SUCCESS;
+    fillResponse(response, RESPONSE_SUCCESS, ptr, k * sizeof(uint8_t));
 }
 
 static void generateSpoofResponse(shoesResponse* response) {
