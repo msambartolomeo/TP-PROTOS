@@ -29,11 +29,11 @@
     negotiation begins.  This begins with the client producing a
     Username/Password request:
 
-            +-----+------+----------+------+----------+
-            | VER | ULEN |  UNAME   | PLEN |  PASSWD  |
-            +-----+------+----------+------+----------+
-            |  1  |  1   | 1 to 255 |  1   | 1 to 255 |
-            +-----+------+----------+------+----------+
+            +-------+------+----------+------+----------+
+            |  VER  | ULEN |  UNAME   | PLEN |  PASSWD  |
+            +-------+------+----------+------+----------+
+            | X'01' |  1   | 1 to 255 |  1   | 1 to 255 |
+            +-------+------+----------+------+----------+
 
     Where:
             o VER       The protocol version number, currently X'01'.
@@ -52,8 +52,10 @@
                          +-----+--------+
 
     A STATUS field of X'00' indicates success. If the server returns a
-    failure (STATUS value other than X'00') status, it MUST close the  // TODO: Borrar esto. Aún si lo dejamos hay que avisar quién es el que cierra la conexión
-    connection.
+    failure (STATUS value other than X'00') status, the server MUST NOT close the
+    connection. The protocol allows for a client to prompt the user to try again
+    without terminating the connection. However, each specific client can decide
+    whether to allow this behaviour or not.
 
     Other values defined in this version are:
             o X'01' - General SHOES server failure.
@@ -64,7 +66,7 @@
 3 Requests
 
     Once the authorization process has concluded, the client sends the
-    request details. Requests formats vary depending on the type of
+    request details. Request formats vary depending on the type of
     request. However, the following fields are present in any request:
 
               o  FMLY   Family of the request.

@@ -31,7 +31,6 @@ static unsigned authentication_read(struct selector_key * key) {
     }
 
     if (done) {
-        // TODO: authenticate user in SHOES
         uint8_t auth_status = authenticate_shoes_user(&parser->credentials) ==
                                       AUTHENTICATION_STATUS_OK
                                   ? 0x00
