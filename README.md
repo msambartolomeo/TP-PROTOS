@@ -42,23 +42,23 @@ Corriendo el comando `./build/socks5d` se iniciará el servidor _SOCKSv5_, y se 
 como argumentos:
 + `-h`     Imprime la ayuda y termina.
 + `-v`     Imprime información sobre la versión versión y termina.
-+ `-l dirección-socks`
++ `-l <dirección-socks>`
 Establece la dirección donde servirá el proxy SOCKSv5.  Por defecto escucha en todas las interfaces.
 + `-N`     Deshabilita los _passwords disectors_.
-+ `-L dirección-de-management`
++ `-L <dirección-de-management>`
 Establece la dirección donde servirá el servicio de _management_. Por defecto escucha únicamente en _loopback_.
-+ `-p puerto-local`
++ `-p <puerto-local>`
 Puerto _TCP_ donde escuchará por conexiones entrantes _SOCKSv5_.  Por defecto el valor es 1080.
-+ `-P puerto-conf`
++ `-P <puerto-conf>`
 Puerto _TCP_ donde escuchará por conexiones entrante del protocolo de configuración. Por defecto el valor es 8080.
-+ `-u user:pass`
++ `-u <user>:<pass>`
 Declara un usuario del _proxy SOCKSv5_ con su contraseña. Se puede utilizar hasta 10 veces.
-+ `-U user:pass`
++ `-U <user>:<pass>`
 Declara un usuario para el servicio de configuración con su contraseña. Se puede utilizar hasta 10 veces.
 
 
 El registro de acceso del _proxy_ consiste en:
-+ **Fecha**  que se procesó la conexión en formato _ISO-8601_.  Ejemplo 2022-06-15T19:56:34Z.
++ **Fecha**  que se procesó la conexión en formato _ISO-8601_.  Ejemplo `2022-06-15T19:56:34Z`.
 + **Nombre** de usuario que hace el requerimiento.  Ejemplo juan.
 + **Tipo de registro**. Siempre el caracter A.
 + **Direccion IP origen** desde donde se conectó el usuario.  Ejemplo ::1.
@@ -83,10 +83,10 @@ como argumentos:
 + `-h`               Imprime la ayuda y termina.
 + `-u <name>:<pass>` Usuario admin y contraseña para acceder al servidor _SHOES_.
 + `-g`               Lista los usuarios del _proxy SOCKSv5_.
-+ `-m `              Muestra las métricas volátiles del servidor. Estas son la cantidad de conexiones históricas, la cantidad de 
++ `-m`              Muestra las métricas volátiles del servidor. Estas son la cantidad de conexiones históricas, la cantidad de 
 conexiones concurrentes, y la cantidad de _bytes_ transferidos. 
 + `-s`               Muestra el estado del _password spoofing_.
-+ `-s1 `             Enciende el _password spoofing_.
++ `-s1`              Enciende el _password spoofing_.
 + `-s0`              Desactiva el _password spoofing_.
 + `-b <size>`        Cambia el tamaño del _buffer_. Este valor no podrá ser mayor a 65535 _bytes_.
 + `-a <name>:<pass>` Agrega un nuevo usuario del _proxy SOCKSv5_ con dichas `name` y `pass`.
@@ -95,3 +95,12 @@ conexiones concurrentes, y la cantidad de _bytes_ transferidos.
 + `-l <FQDN/IP>`     Dirección del _proxy SOCKSv5_ a configurar.
 + `-p <puerto>`      Puerto del servicio de _management_ del _proxy_.
 + `-v`               Imprime información sobre la versión de _shoesc_ y termina.
+
+Además, el cliente permite que se indiquen **varios parámetros en la misma llamada**. El orden de ejecución de los 
+parámetros es:
++ Si se especifican dos parámetros del mismo tipo, se ejecutarán en orden de izquierda a derecha. Esto es particularmente
+importante para modificar el estado del _password spoofing_, pues si se corre `-s1` y `-s0` entonces primero se intentará
+habilitar el _spoofing_ y después se intentará habilitarlo.
++ Si se especifican dos parámetors de distinto tipo, primero se ejecutarán todos los que modifiquen la configuración del
+servidor, y después los que obtengan datos. Por ejemplo, si se ejecuta con los parámetros `-g -a ejemplo:ejemplo`, 
+entonces primero se añadirá el usuario nuevo y después se listarán todos los usuarios. 
