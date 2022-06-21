@@ -7,12 +7,12 @@
 #include <sys/signal.h>
 #include <sys/socket.h>
 
+#include "metrics.h"
 #include "networkHandler.h"
 #include "selector.h"
-#include "stm.h"
-#include "socks5.h"
 #include "shoes.h"
-#include "metrics.h"
+#include "socks5.h"
+#include "stm.h"
 
 #define SELECTOR_TIMEOUT 100
 #define DEFAULT_SHOES_ADDR_IPV4 "127.0.0.1"
@@ -30,6 +30,9 @@ static void networkSelectorSignalHandler()
 
 void close_connection(socks5_connection * connection)
 {
+    if(connection->dontClose) return;
+    connection->dontClose = true;
+
     int client_socket = connection->client_socket;
     int server_socket = connection->origin_socket;
 
@@ -42,6 +45,10 @@ void close_connection(socks5_connection * connection)
     {
         selector_unregister_fd(selector, client_socket);
         close(client_socket);
+    }
+
+    if(connection->resolved_addr != NULL) {
+        freeaddrinfo(connection->resolved_addr);
     }
 
     buffer_reset(&connection->read_buffer);
@@ -100,10 +107,16 @@ static void connection_block(struct selector_key *key) {
     }
 }
 
+static void connection_close(struct selector_key *key) {
+    socks5_connection *conn = (socks5_connection *) key->data;
+    close_connection(conn);
+}
+
 static const struct fd_handler connectionFdHandler = {
     .handle_read = connection_read,
     .handle_write = connection_write,
     .handle_block = connection_block,
+    .handle_close = connection_close,
 };
 
 static void shoesConnectionRead(struct selector_key *key) {
@@ -146,7 +159,7 @@ static void passive_socket_handler(struct selector_key *key)
 
     //Si no tenemos mas fds disponibles dropeamos la conexion.
     //Nos guardamos 1 fd para hacer el accept y luego close.
-    size_t fdsInUse = getSocksCurrentConnections() * 2 + getShoesCurrentConnections() + 3;
+    size_t fdsInUse = getSocksCurrentConnections() * 2 + getShoesCurrentConnections() + 4;
     if((MAX_FDS - fdsInUse) < 2) {
         int newFd;
         if((newFd = accept(fd, NULL, NULL)) != -1) {
@@ -386,6 +399,5 @@ finally:
 }
 
 void network_handler_cleanup() {
-    free_selector_data(selector);
     selector_destroy(selector);
 }

@@ -79,6 +79,8 @@ typedef struct socks5_connection {
     // usuario que creo la conexion
     const struct user *user;
 
+    bool dontClose;
+
     // TODO: Parsers?
     // En la implementación de Coda también tiene ClientAddr, ServerAddr, resolución de nombre de origen, estados
     // de origen y de destino, buffers (tanto raw como struct), y cantidad de referencias al struct.

@@ -330,6 +330,7 @@ static unsigned request_read(struct selector_key *key) {
                             free(k);
                             return setup_response_error(parser, STATUS_GENERAL_SERVER_FAILURE, conn, key);
                         }
+
                         if (selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS) {
                             return ERROR;
                         }
@@ -380,12 +381,15 @@ static unsigned request_connect(struct selector_key *key) {
     if (getsockopt(conn->origin_socket, SOL_SOCKET, SO_ERROR, &error, &(socklen_t){sizeof(int)})) {
         if (parser->request.address_type == ADDRESS_TYPE_DOMAINNAME) {
             freeaddrinfo(conn->resolved_addr);
+            conn->resolved_addr = NULL;
         }
         return setup_response_error(parser, STATUS_GENERAL_SERVER_FAILURE, conn, key);
     }
     if(error) {
         if (parser->request.address_type == ADDRESS_TYPE_DOMAINNAME) {
+            conn->dontClose = true;
             selector_unregister_fd(key->s, conn->origin_socket);
+            conn->dontClose = false;
             close(conn->origin_socket);
             return request_resolv(key);
         }
@@ -394,6 +398,7 @@ static unsigned request_connect(struct selector_key *key) {
 
     if (parser->request.address_type == ADDRESS_TYPE_DOMAINNAME) {
         freeaddrinfo(conn->resolved_addr);
+        conn->resolved_addr = NULL;
     }
 
     parser->response.status = STATUS_SUCCEDED;
