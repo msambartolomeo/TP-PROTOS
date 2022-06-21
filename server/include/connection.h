@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-enum connectionMethod {
+enum connection_method {
     METHOD_NO_AUTHENTICATION_REQUIRED = 0x00,
     METHOD_USERNAME_PASSWORD = 0x02,
     METHOD_NO_ACCEPTABLE_METHODS = 0xFF,
@@ -25,7 +25,7 @@ enum connectionMethod {
  *  appear in the METHODS field.
  */
 
-enum connectionState {
+enum connection_state {
     CONECTION_VERSION,
     CONECTION_NMETHODS,
     CONECTION_METHODS,
@@ -33,16 +33,16 @@ enum connectionState {
     CONECTION_ERROR_UNSUPPORTED_VERSION,
 };
 
-struct connectionParser {
+struct connection_parser {
     uint8_t selected_method;
-    enum connectionState state;
+    enum connection_state state;
     uint8_t remaining;
 };
 
-void connection_parser_init(struct connectionParser * parser);
+void connection_parser_init(struct connection_parser * parser);
 
-enum connectionState connection_parse(struct connectionParser * parser,
-                                      buffer * buf, bool * error);
+enum connection_state connection_parse(struct connection_parser * parser,
+                                       buffer * buf, bool * error);
 
 /*
  *  The server selects from one of the methods given in METHODS, and
@@ -57,8 +57,8 @@ enum connectionState connection_parse(struct connectionParser * parser,
  *  If the selected METHOD is X'FF', none of the methods listed by the
  *  client are acceptable, and the client MUST close the connection.
  */
-int generate_connection_response(buffer * buf, enum connectionMethod method);
+int generate_connection_response(buffer * buf, enum connection_method method);
 
-const char * connection_error(enum connectionState state);
+const char * connection_error(enum connection_state state);
 
-bool is_connection_finished(enum connectionState state, bool * error);
+bool is_connection_finished(enum connection_state state, bool * error);

@@ -3,71 +3,71 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef struct shoesUser {
+typedef struct shoes_user {
     char * name;
     char * pass;
-} shoesUser;
+} shoes_user;
 
-typedef enum shoesFamily { SHOES_GET = 0, SHOES_PUT } shoesFamily;
+typedef enum shoes_family { SHOES_GET = 0, SHOES_PUT } shoes_family;
 
-typedef enum shoesPutCommand {
+typedef enum shoes_put_command {
     CMD_ADD_USER = 0,
     CMD_REMOVE_USER,
     CMD_EDIT_USER,
     CMD_MODIFY_BUFFER,
     CMD_MODIFY_SPOOF,
-} shoesPutCommand;
+} shoes_put_command;
 
-typedef enum shoesGetCommand {
+typedef enum shoes_get_command {
     CMD_METRICS = 0,
     CMD_LIST_USERS,
     CMD_GET_SPOOF,
-} shoesGetCommand;
+} shoes_get_command;
 
-typedef enum shoesConnectStatus {
+typedef enum shoes_connect_status {
     CONNECT_SUCCESS = 0,
     CONNECT_SERV_FAIL,
     CONNECT_INVALID_VER,
     CONNNECT_INVALID_USER
-} shoesConnectStatus;
+} shoes_connect_status;
 
-shoesConnectStatus shoesConnect(const char * host, const char * port,
-                                const shoesUser * user);
+shoes_connect_status shoes_connect(const char * host, const char * port,
+                                   const shoes_user * user);
 
-typedef enum shoesResponseStatus {
+typedef enum shoes_response_status {
     RESPONSE_SUCCESS = 0,
     RESPONSE_SERV_FAIL,
     RESPONSE_FMLY_NOT_SUPPORTED,
     RESPONSE_CMD_NOT_SUPPORTED,
     RESPONSE_CMD_FAIL_04,
     RESPONSE_CMD_FAIL_05,
-} shoesResponseStatus;
+} shoes_response_status;
 
-typedef struct shoesServerMetrics {
-    uint32_t historicConnections;
-    uint32_t currentConnections;
-    uint64_t bytesTransferred;
-} shoesServerMetrics;
-shoesResponseStatus shoesGetMetrics(shoesServerMetrics * metrics);
+typedef struct shoes_server_metrics {
+    uint32_t historic_connections;
+    uint32_t current_connections;
+    uint64_t bytes_transferred;
+} shoes_server_metrics;
+shoes_response_status shoes_get_metrics(shoes_server_metrics * metrics);
 
-typedef struct shoesUserList {
-    uint8_t uCount;
+typedef struct shoes_user_list {
+    uint8_t u_count;
     char ** users;
-} shoesUserList;
-shoesResponseStatus shoesGetUserList(shoesUserList * list);
+} shoes_user_list;
+shoes_response_status shoes_get_user_list(shoes_user_list * list);
 
-shoesResponseStatus shoesGetSpoofingStatus(bool * status);
+shoes_response_status shoes_get_spoofing_status(bool * status);
 
-shoesResponseStatus shoesAddUser(const shoesUser * user);
-shoesResponseStatus shoesRemoveUser(const char * user);
-shoesResponseStatus shoesEditUser(const shoesUser * user);
+shoes_response_status shoes_add_user(const shoes_user * user);
+shoes_response_status shoes_remove_user(const char * user);
+shoes_response_status shoes_edit_user(const shoes_user * user);
 
-shoesResponseStatus shoesModifyBufferSize(uint16_t size);
-shoesResponseStatus shoesModifyPasswordSpoofingStatus(bool status);
+shoes_response_status shoes_modify_buffer_size(uint16_t size);
+shoes_response_status shoes_modify_password_spoofing_status(bool new_status);
 
-const char * shoesHumanReadableStatus();
+const char * shoes_human_readable_status();
 
-void shoesCloseConnection();
+void shoes_close_connection();
 
-void freeShoesUser(shoesUser * user);
-void freeShoesUserList(shoesUserList * list);
+void free_shoes_user(shoes_user * user);
+void free_shoes_user_list(shoes_user_list * list);

@@ -31,7 +31,7 @@
  *           order
  */
 
-enum socksCommand {
+enum socks_command {
     COMMAND_CONNECT = 0x01,
     COMMAND_BIND = 0x02,
     COMMAND_UDP_ASSOCIATE = 0x03,
@@ -55,13 +55,13 @@ enum socksCommand {
  *
  *  the address is a version-6 IP address, with a length of 16 octets.
  */
-enum socksAddressType {
+enum socks_address_type {
     ADDRESS_TYPE_IPV4 = 0x01,
     ADDRESS_TYPE_DOMAINNAME = 0x03,
     ADDRESS_TYPE_IPV6 = 0x04,
 };
 
-enum requestState {
+enum request_state {
     REQUEST_VERSION,
     REQUEST_COMMAND,
     REQUEST_RESERVED,
@@ -76,20 +76,20 @@ enum requestState {
     REQUEST_ERROR_UNSUPPORTED_ADDRESS_TYPE,
 };
 
-union socksAddr {
+union socks_addr {
     struct sockaddr_in ipv4;
     struct sockaddr_in6 ipv6;
     uint8_t fqdn[256];
 };
 
-typedef struct socksRequest {
-    enum socksCommand command;
-    enum socksAddressType address_type;
-    union socksAddr destination;
+typedef struct socks_request {
+    enum socks_command command;
+    enum socks_address_type address_type;
+    union socks_addr destination;
     in_port_t port;
-} socksRequest;
+} socks_request;
 
-enum socksResponseStatus {
+enum socks_response_status {
     STATUS_SUCCEDED = 0x00,
     STATUS_GENERAL_SERVER_FAILURE = 0x01,
     STATUS_CONNECTION_NOT_ALLOWED_BY_RULESET = 0x02,
@@ -135,28 +135,28 @@ enum socksResponseStatus {
  *         o  BND.ADDR       server bound address
  *         o  BND.PORT       server bound port in network octet order
  */
-typedef struct SocksResponse {
-    enum socksResponseStatus status;
-    enum socksAddressType address_type;
-    union socksAddr address;
+typedef struct socks_response {
+    enum socks_response_status status;
+    enum socks_address_type address_type;
+    union socks_addr address;
     in_port_t port;
-} socksResponse;
+} socks_response;
 
-struct requestParser {
-    socksRequest request;
-    socksResponse response;
-    enum requestState state;
+struct request_parser {
+    socks_request request;
+    socks_response response;
+    enum request_state state;
     uint8_t remaining;
     uint8_t * pointer;
 };
 
-void request_parser_init(struct requestParser * parser);
+void request_parser_init(struct request_parser * parser);
 
-enum requestState request_parse(struct requestParser * parser, buffer * buf,
-                                bool * error);
+enum request_state request_parse(struct request_parser * parser, buffer * buf,
+                                 bool * error);
 
-int generate_response(buffer * buf, socksResponse * response);
+int generate_response(buffer * buf, socks_response * response);
 
-const char * request_error(enum requestState state);
+const char * request_error(enum request_state state);
 
-bool is_request_finished(enum requestState state, bool * error);
+bool is_request_finished(enum request_state state, bool * error);

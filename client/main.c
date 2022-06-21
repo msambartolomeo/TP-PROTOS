@@ -6,63 +6,64 @@
 #define DEFAULT_ADDR "127.0.0.1"
 #define DEFAULT_PORT "8080"
 
-static void listUsers() {
-    shoesUserList list;
-    if (shoesGetUserList(&list) != RESPONSE_SUCCESS) {
+static void list_users() {
+    shoes_user_list list;
+    if (shoes_get_user_list(&list) != RESPONSE_SUCCESS) {
         fprintf(stderr, "\nList Users Error: %s\n",
-                shoesHumanReadableStatus()); // TODO: better error printing
+                shoes_human_readable_status()); // TODO: better error printing
         return;
     }
 
     printf("\nUSERS:\n");
-    for (uint8_t i = 0; i < list.uCount; i++) {
+    for (uint8_t i = 0; i < list.u_count; i++) {
         printf("%d: %s\n", i + 1, list.users[i]);
     }
 
-    freeShoesUserList(&list);
+    free_shoes_user_list(&list);
 }
 
-static void getServerMetrics() {
-    shoesServerMetrics metrics;
-    if (shoesGetMetrics(&metrics) != RESPONSE_SUCCESS) {
+static void get_server_metrics() {
+    shoes_server_metrics metrics;
+    if (shoes_get_metrics(&metrics) != RESPONSE_SUCCESS) {
         fprintf(stderr, "\nGet Metrics Error: %s\n",
-                shoesHumanReadableStatus()); // TODO: better error printing
+                shoes_human_readable_status()); // TODO: better error printing
         return;
     }
 
     printf("\nServer Metrics: \n");
     printf("----------------\n");
-    printf("Historic Connections: %u\n", metrics.historicConnections);
-    printf("Current Connections: %u\n", metrics.currentConnections);
-    printf("Bytes Transferred: %lu\n", metrics.bytesTransferred);
+    printf("Historic Connections: %u\n", metrics.historic_connections);
+    printf("Current Connections: %u\n", metrics.current_connections);
+    printf("Bytes Transferred: %lu\n", metrics.bytes_transferred);
 }
 
-void getPasswordSpoofingStatus() {
-    bool spoofStatus;
-    if (shoesGetSpoofingStatus(&spoofStatus) != RESPONSE_SUCCESS) {
+void get_password_spoofing_status() {
+    bool spoof_status;
+    if (shoes_get_spoofing_status(&spoof_status) != RESPONSE_SUCCESS) {
         fprintf(stderr, "\nGet spoof status error: %s\n",
-                shoesHumanReadableStatus()); // TODO: better error printing
+                shoes_human_readable_status()); // TODO: better error printing
         return;
     }
 
-    printf("\nSpoof Status: \n%s\n", spoofStatus ? "ON" : "OFF");
+    printf("\nSpoof Status: \n%s\n", spoof_status ? "ON" : "OFF");
 }
 
-void modifyBufSize(uint32_t size) {
-    if (shoesModifyBufferSize(size) != RESPONSE_SUCCESS) {
+void modify_buf_size(uint32_t size) {
+    if (shoes_modify_buffer_size(size) != RESPONSE_SUCCESS) {
         fprintf(stderr, "\nModify bufsize error: %s\n",
-                shoesHumanReadableStatus()); // TODO: better error printing
+                shoes_human_readable_status()); // TODO: better error printing
         return;
     }
 
     printf("\nBuffer size modified successfully\n");
 }
 
-void addUsers(struct shoesUser * users, uint8_t len) {
+void add_users(struct shoes_user * users, uint8_t len) {
     for (int i = 0; i < len; i++) {
-        if (shoesAddUser(&users[i]) != RESPONSE_SUCCESS) {
-            fprintf(stderr, "\nAdd user error: %s\n",
-                    shoesHumanReadableStatus()); // TODO: better error printing
+        if (shoes_add_user(&users[i]) != RESPONSE_SUCCESS) {
+            fprintf(
+                stderr, "\nAdd user error: %s\n",
+                shoes_human_readable_status()); // TODO: better error printing
             return;
         }
 
@@ -70,11 +71,12 @@ void addUsers(struct shoesUser * users, uint8_t len) {
     }
 }
 
-void editUsers(struct shoesUser * users, uint8_t len) {
+void edit_users(struct shoes_user * users, uint8_t len) {
     for (int i = 0; i < len; i++) {
-        if (shoesEditUser(&users[i]) != RESPONSE_SUCCESS) {
-            fprintf(stderr, "\nEdit user error: %s\n",
-                    shoesHumanReadableStatus()); // TODO: better error printing
+        if (shoes_edit_user(&users[i]) != RESPONSE_SUCCESS) {
+            fprintf(
+                stderr, "\nEdit user error: %s\n",
+                shoes_human_readable_status()); // TODO: better error printing
             return;
         }
 
@@ -82,11 +84,12 @@ void editUsers(struct shoesUser * users, uint8_t len) {
     }
 }
 
-void removeUsers(char ** users, uint8_t len) {
+void remove_users(char ** users, uint8_t len) {
     for (int i = 0; i < len; i++) {
-        if (shoesRemoveUser(users[i]) != RESPONSE_SUCCESS) {
-            fprintf(stderr, "\nRemove user error: %s\n",
-                    shoesHumanReadableStatus()); // TODO: better error printing
+        if (shoes_remove_user(users[i]) != RESPONSE_SUCCESS) {
+            fprintf(
+                stderr, "\nRemove user error: %s\n",
+                shoes_human_readable_status()); // TODO: better error printing
             // TODO: @Agus esto falla cuando mandas un usuario inexistente, pero
             // debería decir que no se pudo eliminar porque no existe, no que
             // falló.
@@ -97,10 +100,10 @@ void removeUsers(char ** users, uint8_t len) {
     }
 }
 
-void modifySpoofingStatus(bool newStatus) {
-    if (shoesModifyPasswordSpoofingStatus(newStatus) != RESPONSE_SUCCESS) {
+void modify_spoofing_status(bool new_status) {
+    if (shoes_modify_password_spoofing_status(new_status) != RESPONSE_SUCCESS) {
         fprintf(stderr, "\nModify spoofing status error: %s\n",
-                shoesHumanReadableStatus()); // TODO: better error printing
+                shoes_human_readable_status()); // TODO: better error printing
         return;
     }
 
@@ -108,10 +111,10 @@ void modifySpoofingStatus(bool newStatus) {
 }
 
 int main(int argc, char ** argv) {
-    struct shoesArgs args;
+    struct shoes_args args;
     parse_args(argc, argv, &args);
 
-    if (args.authUser.name == NULL) {
+    if (args.auth_user.name == NULL) {
         fprintf(stderr, "\nAdmin credentials not included.\n");
         return 1;
     }
@@ -119,36 +122,36 @@ int main(int argc, char ** argv) {
     char * addr = DEFAULT_ADDR;
     char * port = DEFAULT_PORT;
 
-    if (args.usePort) {
+    if (args.use_port) {
         port = args.port;
     }
-    if (args.useAddr) {
+    if (args.use_addr) {
         addr = args.addr;
     }
 
-    if (shoesConnect(addr, port, &args.authUser) != CONNECT_SUCCESS) {
-        fprintf(stderr, "\nConnect error: %s\n", shoesHumanReadableStatus());
+    if (shoes_connect(addr, port, &args.auth_user) != CONNECT_SUCCESS) {
+        fprintf(stderr, "\nConnect error: %s\n", shoes_human_readable_status());
         return 1;
     }
 
-    if (args.listUsers)
-        listUsers();
-    if (args.getServerMetrics)
-        getServerMetrics();
-    if (args.getPasswordSpoofingStatus)
-        getPasswordSpoofingStatus();
-    if (args.modifyBufSize)
-        modifyBufSize(args.bufSize);
-    if (args.nAddUsers > 0)
-        addUsers(args.addUsers, args.nAddUsers);
-    if (args.nEditUsers > 0)
-        editUsers(args.editUsers, args.nEditUsers);
-    if (args.nRemoveUsers > 0)
-        removeUsers(args.removeUsers, args.nRemoveUsers);
-    if (args.modifySpoofingStatus)
-        modifySpoofingStatus(args.newSpoofingStatus);
+    if (args.list_users)
+        list_users();
+    if (args.get_server_metrics)
+        get_server_metrics();
+    if (args.get_password_spoofing_status)
+        get_password_spoofing_status();
+    if (args.modify_buf_size)
+        modify_buf_size(args.buf_size);
+    if (args.n_add_users > 0)
+        add_users(args.add_users, args.n_add_users);
+    if (args.n_edit_users > 0)
+        edit_users(args.edit_users, args.n_edit_users);
+    if (args.n_remove_users > 0)
+        remove_users(args.remove_users, args.n_remove_users);
+    if (args.modify_spoofing_status)
+        modify_spoofing_status(args.new_spoofing_status);
 
-    shoesCloseConnection();
+    shoes_close_connection();
 
     return 0;
 }

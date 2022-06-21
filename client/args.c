@@ -20,7 +20,7 @@
 //     return (unsigned short)sl;
 // }
 
-static void user(char * s, struct shoesUser * user) {
+static void user(char * s, struct shoes_user * user) {
     char * p = strchr(s, ':');
     if (p == NULL) {
         fprintf(stderr,
@@ -73,28 +73,28 @@ static void usage(const char * progname) {
     exit(1);
 }
 
-void spoof(const char * s, struct shoesArgs * args) {
+void spoof(const char * s, struct shoes_args * args) {
     if (s == NULL) {
-        args->getPasswordSpoofingStatus = true;
+        args->get_password_spoofing_status = true;
         return;
     }
 
     switch (*s) {
     case '1':
-        args->modifySpoofingStatus = true;
-        args->newSpoofingStatus = true;
+        args->modify_spoofing_status = true;
+        args->new_spoofing_status = true;
         break;
     case '0':
-        args->modifySpoofingStatus = true;
-        args->newSpoofingStatus = false;
+        args->modify_spoofing_status = true;
+        args->new_spoofing_status = false;
         break;
     default:
-        args->getPasswordSpoofingStatus = true;
+        args->get_password_spoofing_status = true;
         break;
     }
 }
 
-void buf(const char * s, struct shoesArgs * args) {
+void buf(const char * s, struct shoes_args * args) {
     char * endptr;
     long val = strtol(s, &endptr, 0);
 
@@ -103,11 +103,11 @@ void buf(const char * s, struct shoesArgs * args) {
         exit(1);
     }
 
-    args->modifyBufSize = true;
-    args->bufSize = val;
+    args->modify_buf_size = true;
+    args->buf_size = val;
 }
 
-void parse_args(const int argc, char ** argv, struct shoesArgs * args) {
+void parse_args(const int argc, char ** argv, struct shoes_args * args) {
     memset(args, 0, sizeof(*args));
 
     int c;
@@ -122,35 +122,35 @@ void parse_args(const int argc, char ** argv, struct shoesArgs * args) {
             usage("shoesc");
             break;
         case 'g':
-            args->listUsers = true;
+            args->list_users = true;
             break;
         case 'm':
-            args->getServerMetrics = true;
+            args->get_server_metrics = true;
             break;
         case 's':
             spoof(optarg, args);
             break;
         case 'u':
-            user(optarg, &args->authUser);
+            user(optarg, &args->auth_user);
             break;
         case 'a':
-            user(optarg, &args->addUsers[args->nAddUsers++]);
+            user(optarg, &args->add_users[args->n_add_users++]);
             break;
         case 'e':
-            user(optarg, &args->editUsers[args->nEditUsers++]);
+            user(optarg, &args->edit_users[args->n_edit_users++]);
             break;
         case 'r':
-            args->removeUsers[args->nRemoveUsers++] = optarg;
+            args->remove_users[args->n_remove_users++] = optarg;
             break;
         case 'b':
             buf(optarg, args);
             break;
         case 'p':
-            args->usePort = true;
+            args->use_port = true;
             args->port = optarg;
             break;
         case 'l':
-            args->useAddr = true;
+            args->use_addr = true;
             args->addr = optarg;
             break;
         case 'v':

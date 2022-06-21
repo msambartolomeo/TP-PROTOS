@@ -29,7 +29,7 @@ typedef struct shoes_connection {
     int client_socket;
     int client_interests;
 
-    bool isAuthenticated;
+    bool is_authenticated;
 
     // Buffers
     uint8_t raw_buffer_a[SHOES_BUFFER_DEFAULT_SIZE];
@@ -40,8 +40,8 @@ typedef struct shoes_connection {
     struct state_machine stm;
 
     union {
-        struct authenticationParser authenticationParser;
-        shoesParser shoesRequestParser;
+        struct authentication_parser authentication_parser;
+        shoes_parser shoes_request_parser;
     } parser;
 } shoes_connection;
 

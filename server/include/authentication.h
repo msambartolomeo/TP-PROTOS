@@ -26,7 +26,7 @@ static const uint8_t AUTHENTICATION_VERSION = 0x01;
  *  association with the given UNAME.
  */
 
-enum authenticationState {
+enum authentication_state {
     AUTHENTICATION_STATE_VERSION,
     AUTHENTICATION_USERNAME_LENGTH,
     AUTHENTICATION_USERNAME,
@@ -41,20 +41,20 @@ typedef struct credentials {
     uint8_t password[256];
 } authentication_credentials;
 
-struct authenticationParser {
-    enum authenticationState state;
+struct authentication_parser {
+    enum authentication_state state;
     uint8_t remaining;
     uint8_t * pointer;
     authentication_credentials credentials;
 };
 
-void authentication_parser_init(struct authenticationParser * parser);
+void authentication_parser_init(struct authentication_parser * parser);
 
-enum authenticationState
-authentication_parse(struct authenticationParser * parser, buffer * buf,
+enum authentication_state
+authentication_parse(struct authentication_parser * parser, buffer * buf,
                      bool * error);
 
-enum authenticationStatus {
+enum authentication_status {
     AUTHENTICATION_STATUS_OK = 0,
     AUTHENTICATION_STATUS_FAILED = 1,
 };
@@ -75,6 +75,6 @@ enum authenticationStatus {
  */
 int generate_authentication_response(buffer * buf, uint8_t status);
 
-const char * authentication_error(enum authenticationState state);
+const char * authentication_error(enum authentication_state state);
 
-bool is_authentication_finished(enum authenticationState state, bool * error);
+bool is_authentication_finished(enum authentication_state state, bool * error);

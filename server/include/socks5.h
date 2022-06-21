@@ -29,12 +29,12 @@ enum socks5_state {
     DONE,
 };
 
-struct Copy {
+struct copy {
     int fd;
     buffer *rb, *wb;
     fd_interest interests;
     fd_interest connection_interests;
-    struct Copy * other;
+    struct copy * other;
 };
 
 typedef struct socks5_connection {
@@ -64,22 +64,22 @@ typedef struct socks5_connection {
     struct state_machine stm;
 
     union {
-        struct connectionParser connection;
-        struct authenticationParser authentication;
-        struct requestParser request;
+        struct connection_parser connection;
+        struct authentication_parser authentication;
+        struct request_parser request;
     } parser;
 
     // estructura para contraseñas de pop
     struct pop3_parser pop3;
 
     // estructuras para usar en el estado de copy
-    struct Copy client_copy;
-    struct Copy origin_copy;
+    struct copy client_copy;
+    struct copy origin_copy;
 
     // usuario que creo la conexion
     const struct user * user;
 
-    bool dontClose;
+    bool dont_close;
 
     // TODO: Parsers?
     // En la implementación de Coda también tiene ClientAddr, ServerAddr,
@@ -89,5 +89,5 @@ typedef struct socks5_connection {
 
 const struct state_definition * get_socks5_states();
 
-void socksChangeBufSize(uint32_t size);
-uint32_t socksGetBufSize();
+void socks_change_buf_size(uint32_t size);
+uint32_t socks_get_buf_size();

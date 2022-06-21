@@ -2,14 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void authentication_parser_init(struct authenticationParser * parser) {
+void authentication_parser_init(struct authentication_parser * parser) {
     parser->state = AUTHENTICATION_STATE_VERSION;
     parser->remaining = 0;
     parser->pointer = NULL;
 }
 
-static void copy_byte_from_auth(struct authenticationParser * parser,
-                                uint8_t byte, enum authenticationState next) {
+static void copy_byte_from_auth(struct authentication_parser * parser,
+                                uint8_t byte, enum authentication_state next) {
     *parser->pointer = byte;
     parser->remaining--;
     parser->pointer++;
@@ -20,9 +20,9 @@ static void copy_byte_from_auth(struct authenticationParser * parser,
     }
 }
 
-static void handle_length(struct authenticationParser * parser, uint8_t length,
-                          enum authenticationState next,
-                          enum authenticationState skip, uint8_t * pointer) {
+static void handle_length(struct authentication_parser * parser, uint8_t length,
+                          enum authentication_state next,
+                          enum authentication_state skip, uint8_t * pointer) {
     if (length == 0x0) {
         parser->state = skip;
     } else {
@@ -33,7 +33,7 @@ static void handle_length(struct authenticationParser * parser, uint8_t length,
     }
 }
 
-static void authentication_parse_byte(struct authenticationParser * parser,
+static void authentication_parse_byte(struct authentication_parser * parser,
                                       uint8_t byte) {
     switch (parser->state) {
     case AUTHENTICATION_STATE_VERSION:
@@ -65,8 +65,8 @@ static void authentication_parse_byte(struct authenticationParser * parser,
     }
 }
 
-enum authenticationState
-authentication_parse(struct authenticationParser * parser, buffer * buf,
+enum authentication_state
+authentication_parse(struct authentication_parser * parser, buffer * buf,
                      bool * error) {
     while (buffer_can_read(buf)) {
         const uint8_t b = buffer_read(buf);
@@ -92,14 +92,14 @@ int generate_authentication_response(buffer * buf, uint8_t status) {
     return 2;
 }
 
-const char * authentication_error(enum authenticationState state) {
+const char * authentication_error(enum authentication_state state) {
     if (state == AUTHENTICATION_ERROR_UNSUPPORTED_VERSION) {
         return "Unsupported version";
     }
     return "";
 }
 
-bool is_authentication_finished(enum authenticationState state, bool * error) {
+bool is_authentication_finished(enum authentication_state state, bool * error) {
     if (state == AUTHENTICATION_ERROR_UNSUPPORTED_VERSION) {
         *error = true;
         return true;

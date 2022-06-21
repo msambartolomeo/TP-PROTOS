@@ -5,7 +5,7 @@
 #include <string.h>
 #include <sys/socket.h>
 
-void request_parser_init(struct requestParser * parser) {
+void request_parser_init(struct request_parser * parser) {
     parser->state = REQUEST_VERSION;
     parser->remaining = 0;
     parser->request.command = 0;
@@ -13,7 +13,7 @@ void request_parser_init(struct requestParser * parser) {
     parser->request.port = 0;
 }
 
-static enum requestState cmd(struct requestParser * parser, uint8_t byte) {
+static enum request_state cmd(struct request_parser * parser, uint8_t byte) {
     switch (byte) {
     case COMMAND_CONNECT:
     case COMMAND_BIND:
@@ -25,8 +25,8 @@ static enum requestState cmd(struct requestParser * parser, uint8_t byte) {
     }
 }
 
-static enum requestState addr_type(struct requestParser * parser,
-                                   uint8_t byte) {
+static enum request_state addr_type(struct request_parser * parser,
+                                    uint8_t byte) {
     parser->request.address_type = byte;
     parser->pointer = 0;
 
@@ -54,7 +54,7 @@ static enum requestState addr_type(struct requestParser * parser,
     }
 }
 
-static void request_parse_byte(struct requestParser * parser, uint8_t byte) {
+static void request_parse_byte(struct request_parser * parser, uint8_t byte) {
     switch (parser->state) {
     case REQUEST_VERSION:
         parser->state = byte == SOCKS_VERSION
@@ -111,8 +111,8 @@ static void request_parse_byte(struct requestParser * parser, uint8_t byte) {
     }
 }
 
-enum requestState request_parse(struct requestParser * parser, buffer * buf,
-                                bool * error) {
+enum request_state request_parse(struct request_parser * parser, buffer * buf,
+                                 bool * error) {
     while (buffer_can_read(buf)) {
         const uint8_t b = buffer_read(buf);
         request_parse_byte(parser, b);
@@ -123,7 +123,7 @@ enum requestState request_parse(struct requestParser * parser, buffer * buf,
     return parser->state;
 }
 
-static uint8_t * get_address_pointer_and_length(socksResponse * response,
+static uint8_t * get_address_pointer_and_length(socks_response * response,
                                                 size_t * length) {
     switch (response->address_type) {
     case ADDRESS_TYPE_IPV4:
@@ -139,7 +139,7 @@ static uint8_t * get_address_pointer_and_length(socksResponse * response,
     return NULL;
 }
 
-int generate_response(buffer * buf, socksResponse * response) {
+int generate_response(buffer * buf, socks_response * response) {
     size_t n;
     uint8_t * buf_ptr = buffer_write_ptr(buf, &n);
 
@@ -168,7 +168,7 @@ int generate_response(buffer * buf, socksResponse * response) {
     return (int)length + 6 + domain;
 }
 
-const char * request_error(enum requestState state) {
+const char * request_error(enum request_state state) {
     switch (state) {
     case REQUEST_ERROR_UNSUPPORTED_VERSION:
         return "Unsupported version";
@@ -183,7 +183,7 @@ const char * request_error(enum requestState state) {
     }
 }
 
-bool is_request_finished(enum requestState state, bool * error) {
+bool is_request_finished(enum request_state state, bool * error) {
     switch (state) {
     case REQUEST_DONE:
         return true;

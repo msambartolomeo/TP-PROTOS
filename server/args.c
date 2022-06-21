@@ -30,7 +30,7 @@ static void parse_and_add(char * s) {
     } else {
         *p = 0;
         p++;
-        switch (addUser(s, p)) {
+        switch (add_user(s, p)) {
         case ADD_USER_SUCCESS:
             return;
         case ADD_USER_ALREADY_EXISTS: // TODO: Liberar memoria

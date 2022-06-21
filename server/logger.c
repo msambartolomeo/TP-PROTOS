@@ -42,7 +42,7 @@ static struct ip_and_port * sockaddr_to_human(struct ip_and_port * ip_port,
     return ip_port;
 }
 
-void logger(enum logType type, socks5_connection * conn) {
+void logger(enum log_type type, socks5_connection * conn) {
     const char * destination;
     struct ip_and_port destination_ip_port;
     struct ip_and_port source_ip_port;

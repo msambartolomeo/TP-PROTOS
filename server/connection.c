@@ -4,14 +4,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void connection_parser_init(struct connectionParser * parser) {
+void connection_parser_init(struct connection_parser * parser) {
     parser->remaining = 0;
     parser->state = CONECTION_VERSION;
     parser->selected_method = METHOD_NO_ACCEPTABLE_METHODS;
 }
 
-static enum connectionMethod choose_method(enum connectionMethod current,
-                                           enum connectionMethod new) {
+static enum connection_method choose_method(enum connection_method current,
+                                            enum connection_method new) {
     if (new == METHOD_USERNAME_PASSWORD ||
         (!get_auth_state() &&
          (new == METHOD_NO_AUTHENTICATION_REQUIRED && current !=
@@ -21,7 +21,7 @@ static enum connectionMethod choose_method(enum connectionMethod current,
     return current;
 }
 
-static void connection_parse_byte(struct connectionParser * parser,
+static void connection_parse_byte(struct connection_parser * parser,
                                   uint8_t byte) {
     switch (parser->state) {
     case CONECTION_VERSION:
@@ -54,7 +54,7 @@ static void connection_parse_byte(struct connectionParser * parser,
     }
 }
 
-bool is_connection_finished(enum connectionState state, bool * error) {
+bool is_connection_finished(enum connection_state state, bool * error) {
     if (state == CONECTION_ERROR_UNSUPPORTED_VERSION) {
         *error = true;
         return true;
@@ -62,8 +62,8 @@ bool is_connection_finished(enum connectionState state, bool * error) {
     return state == CONECTION_DONE;
 }
 
-enum connectionState connection_parse(struct connectionParser * parser,
-                                      buffer * buf, bool * error) {
+enum connection_state connection_parse(struct connection_parser * parser,
+                                       buffer * buf, bool * error) {
     while (buffer_can_read(buf)) {
         const uint8_t b = buffer_read(buf);
         connection_parse_byte(parser, b);
@@ -74,7 +74,7 @@ enum connectionState connection_parse(struct connectionParser * parser,
     return parser->state;
 }
 
-int generate_connection_response(buffer * buf, enum connectionMethod method) {
+int generate_connection_response(buffer * buf, enum connection_method method) {
     size_t n;
     uint8_t * buf_ptr = buffer_write_ptr(buf, &n);
     if (n < 2) {
@@ -87,7 +87,7 @@ int generate_connection_response(buffer * buf, enum connectionMethod method) {
     return 2;
 }
 
-const char * connection_error(enum connectionState state) {
+const char * connection_error(enum connection_state state) {
     if (state == CONECTION_ERROR_UNSUPPORTED_VERSION) {
         return "Unsupported version";
     }

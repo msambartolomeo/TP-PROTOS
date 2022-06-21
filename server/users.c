@@ -3,25 +3,25 @@
 #include <stdlib.h>
 #include <string.h>
 
-static struct user * userDatabase[MAX_USERS];
-static uint8_t nUsers;
-static struct user * shoesUserDatabase[MAX_SHOES_USERS];
-static uint8_t snUsers;
+static struct user * user_database[MAX_USERS];
+static uint8_t n_users;
+static struct user * shoes_user_database[MAX_SHOES_USERS];
+static uint8_t sn_users;
 static bool auth_required = false;
 
 void free_users() {
-    for (uint8_t i = 0; i < nUsers; i++) {
-        free(userDatabase[i]->name);
-        free(userDatabase[i]->pass);
-        free(userDatabase[i]);
+    for (uint8_t i = 0; i < n_users; i++) {
+        free(user_database[i]->name);
+        free(user_database[i]->pass);
+        free(user_database[i]);
     }
-    nUsers = 0;
+    n_users = 0;
     auth_required = false;
 }
 
 void initialize_shoes_users(struct user * users, uint8_t nusers) {
-    *shoesUserDatabase = users;
-    snUsers = nusers;
+    *shoes_user_database = users;
+    sn_users = nusers;
 }
 
 bool get_auth_state() { return auth_required; }
@@ -33,8 +33,8 @@ int compare_users(const char * one, const char * two) {
 }
 
 static int find_user(char * name) {
-    for (int i = 0; i < nUsers; i++) {
-        if (compare_users(userDatabase[i]->name, name)) {
+    for (int i = 0; i < n_users; i++) {
+        if (compare_users(user_database[i]->name, name)) {
             return i;
         }
     }
@@ -42,51 +42,51 @@ static int find_user(char * name) {
 }
 
 // TODO replace bool with status enum
-enum addUserResponse addUser(char * name, char * pass) {
-    if (nUsers == MAX_USERS) {
+enum add_user_response add_user(char * name, char * pass) {
+    if (n_users == MAX_USERS) {
         return ADD_USER_MAX_REACHED;
     }
     if (find_user(name) != -1) {
         return ADD_USER_ALREADY_EXISTS;
     }
 
-    userDatabase[nUsers] = malloc(sizeof(struct user));
-    if (userDatabase[nUsers] == NULL) {
+    user_database[n_users] = malloc(sizeof(struct user));
+    if (user_database[n_users] == NULL) {
         return ADD_USER_SERV_ERROR;
     }
 
     size_t ulen = strlen(name);
     size_t plen = strlen(pass);
-    userDatabase[nUsers]->name = malloc(ulen + 1);
-    userDatabase[nUsers]->pass = malloc(plen + 1);
+    user_database[n_users]->name = malloc(ulen + 1);
+    user_database[n_users]->pass = malloc(plen + 1);
     if (name == NULL || pass == NULL) {
         return ADD_USER_SERV_ERROR;
     }
 
-    strcpy(userDatabase[nUsers]->name, name);
-    strcpy(userDatabase[nUsers]->pass, pass);
-    if (nUsers == 0) {
+    strcpy(user_database[n_users]->name, name);
+    strcpy(user_database[n_users]->pass, pass);
+    if (n_users == 0) {
         auth_required = true;
     }
-    nUsers++;
+    n_users++;
     return ADD_USER_SUCCESS;
 }
 
-enum editUserResponse editUser(char * name, char * pass) {
+enum edit_user_response edit_user(char * name, char * pass) {
     int i = find_user(name);
     if (i == -1) {
         return EDIT_USER_NOT_FOUND;
     }
-    size_t pLen = strlen(pass);
-    userDatabase[i]->pass = realloc(userDatabase[i]->pass, pLen + 1);
-    if (userDatabase[i]->pass == NULL) {
+    size_t plen = strlen(pass);
+    user_database[i]->pass = realloc(user_database[i]->pass, plen + 1);
+    if (user_database[i]->pass == NULL) {
         return EDIT_USER_SERV_ERROR;
     }
-    strcpy(userDatabase[i]->pass, pass);
+    strcpy(user_database[i]->pass, pass);
     return EDIT_USER_SUCCESS;
 }
 
-bool removeUser(char * name) {
+bool remove_user(char * name) {
     if (name == NULL) {
         return false;
     }
@@ -94,21 +94,21 @@ bool removeUser(char * name) {
     if (idx == -1) {
         return false;
     }
-    struct user * toDel = userDatabase[idx];
-    userDatabase[idx] = userDatabase[nUsers - 1];
+    struct user * to_del = user_database[idx];
+    user_database[idx] = user_database[n_users - 1];
 
-    free(toDel->name);
-    free(toDel->pass);
-    free(toDel);
+    free(to_del->name);
+    free(to_del->pass);
+    free(to_del);
 
-    if (--nUsers == 0) {
+    if (--n_users == 0) {
         auth_required = false;
     }
 
     return true;
 }
 
-static enum authenticationStatus
+static enum authentication_status
 authenticate_user_general(authentication_credentials * credentials,
                           struct user ** users, uint8_t n) {
     for (int i = 0; i < n; i++) {
@@ -122,23 +122,24 @@ authenticate_user_general(authentication_credentials * credentials,
 
 const struct user *
 authenticate_user(authentication_credentials * credentials) {
-    for (int i = 0; i < nUsers; i++) {
-        if (compare_users(userDatabase[i]->name,
+    for (int i = 0; i < n_users; i++) {
+        if (compare_users(user_database[i]->name,
                           (char *)credentials->username) &&
-            compare_users(userDatabase[i]->pass,
+            compare_users(user_database[i]->pass,
                           (char *)credentials->password)) {
-            return userDatabase[i];
+            return user_database[i];
         }
     }
     return NULL;
 }
 
-enum authenticationStatus
+enum authentication_status
 authenticate_shoes_user(authentication_credentials * credentials) {
-    return authenticate_user_general(credentials, shoesUserDatabase, snUsers);
+    return authenticate_user_general(credentials, shoes_user_database,
+                                     sn_users);
 }
 
 struct user ** get_socks_users(uint8_t * n) {
-    *n = nUsers;
-    return userDatabase;
+    *n = n_users;
+    return user_database;
 }

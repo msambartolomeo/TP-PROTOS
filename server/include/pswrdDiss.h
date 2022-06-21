@@ -13,7 +13,7 @@
 #define POP3_ARGUMENT_LENGTH 249
 #define POP3_COMMAND_LENGTH 5
 
-enum pop3State {
+enum pop3_state {
     POP3_GREETING,
     POP3_USER_COMMAND,
     POP3_USER,
@@ -30,7 +30,7 @@ struct pop3 {
 
 struct pop3_parser {
     uint8_t buff[POP3_COMMAND_LENGTH];
-    enum pop3State state;
+    enum pop3_state state;
     struct pop3 info;
     uint8_t remaining;
     uint8_t * current;
@@ -41,14 +41,14 @@ void pop3_parser_init(struct pop3_parser * parser);
 void skip_pop3_check(struct pop3_parser * parser);
 
 // check if the server sends pop3 greeting (+OK)
-enum pop3State check_pop3(uint8_t * buf_ptr, ssize_t n,
-                          struct pop3_parser * parser);
+enum pop3_state check_pop3(uint8_t * buf_ptr, ssize_t n,
+                           struct pop3_parser * parser);
 
 // checks if the client sends a user or pass pop3 command and saves the argument
-enum pop3State pop3_parse(uint8_t * buf_ptr, ssize_t * n,
-                          struct pop3_parser * parser);
+enum pop3_state pop3_parse(uint8_t * buf_ptr, ssize_t * n,
+                           struct pop3_parser * parser);
 
-bool do_pop3(enum pop3State state);
+bool do_pop3(enum pop3_state state);
 
 bool dissector_is_on();
 

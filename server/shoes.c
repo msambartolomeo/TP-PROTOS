@@ -7,7 +7,7 @@
 static unsigned authentication_read(struct selector_key * key) {
 
     shoes_connection * conn = (shoes_connection *)key->data;
-    struct authenticationParser * parser = &conn->parser.authenticationParser;
+    struct authentication_parser * parser = &conn->parser.authentication_parser;
 
     size_t count;
     uint8_t * bufptr = buffer_write_ptr(&conn->read_buffer, &count);
@@ -21,7 +21,7 @@ static unsigned authentication_read(struct selector_key * key) {
     }
 
     bool error = false;
-    enum authenticationState state =
+    enum authentication_state state =
         authentication_parse(parser, &conn->read_buffer, &error);
 
     bool done = is_authentication_finished(state, &error);
@@ -32,27 +32,27 @@ static unsigned authentication_read(struct selector_key * key) {
 
     if (done) {
         // TODO: authenticate user in SHOES
-        uint8_t authStatus = authenticate_shoes_user(&parser->credentials) ==
-                                     AUTHENTICATION_STATUS_OK
-                                 ? 0x00
-                                 : 0x03;
-        if (authStatus == RESPONSE_SUCCESS) {
-            conn->isAuthenticated = true;
+        uint8_t auth_status = authenticate_shoes_user(&parser->credentials) ==
+                                      AUTHENTICATION_STATUS_OK
+                                  ? 0x00
+                                  : 0x03;
+        if (auth_status == RESPONSE_SUCCESS) {
+            conn->is_authenticated = true;
         }
 
         if (!buffer_can_write(&conn->write_buffer)) {
             return SHOES_ERROR;
         }
 
-        size_t nBuf;
-        uint8_t * bufPtr = buffer_write_ptr(&conn->write_buffer, &nBuf);
+        size_t n_buf;
+        uint8_t * buf_ptr = buffer_write_ptr(&conn->write_buffer, &n_buf);
 
-        if (nBuf < 2) {
+        if (n_buf < 2) {
             return SHOES_ERROR;
         }
 
-        bufPtr[0] = 1;
-        bufPtr[1] = authStatus;
+        buf_ptr[0] = 1;
+        buf_ptr[1] = auth_status;
         buffer_write_adv(&conn->write_buffer, 2);
 
         if ((SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE))) {
@@ -81,7 +81,7 @@ static unsigned authentication_write(struct selector_key * key) {
             return SHOES_ERROR;
         }
 
-        if (conn->isAuthenticated) {
+        if (conn->is_authenticated) {
             return SHOES_REQUEST_READ;
         }
 
@@ -98,7 +98,7 @@ static void request_init(unsigned state, struct selector_key * key) {
 // SHOES_REQUEST_READ
 static unsigned request_read(struct selector_key * key) {
     shoes_connection * conn = (shoes_connection *)key->data;
-    struct shoesParser * parser = &conn->parser.shoesRequestParser;
+    struct shoes_parser * parser = &conn->parser.shoes_request_parser;
 
     size_t count;
     uint8_t * bufptr = buffer_write_ptr(&conn->read_buffer, &count);
@@ -127,8 +127,8 @@ static unsigned request_read(struct selector_key * key) {
 static unsigned request_write(struct selector_key * key) {
     shoes_connection * conn = (shoes_connection *)key->data;
 
-    enum writeResponseStatus status = writeResponse(
-        &conn->write_buffer, &conn->parser.shoesRequestParser.response);
+    enum write_response_status status = write_response(
+        &conn->write_buffer, &conn->parser.shoes_request_parser.response);
 
     size_t count;
     uint8_t * bufptr = buffer_read_ptr(&conn->write_buffer, &count);

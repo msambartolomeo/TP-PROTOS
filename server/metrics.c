@@ -1,31 +1,31 @@
 #include "metrics.h"
 
-static uint32_t historicConnections;
-static uint32_t socksCurrentConnections;
-static uint32_t shoesCurrentConnections;
-static uint64_t bytesTransferred;
+static uint32_t historic_connections;
+static uint32_t socks_current_connections;
+static uint32_t shoes_current_connections;
+static uint64_t bytes_transferred;
 
 void init_metrics() {
-    historicConnections = 0;
-    socksCurrentConnections = 0;
-    bytesTransferred = 0;
+    historic_connections = 0;
+    socks_current_connections = 0;
+    bytes_transferred = 0;
 }
 
-void reportNewSocksConnection() {
-    historicConnections++;
-    socksCurrentConnections++;
+void report_new_socks_connection() {
+    historic_connections++;
+    socks_current_connections++;
 }
 
-void reportClosedSocksConnection() { socksCurrentConnections--; }
+void report_closed_socks_connection() { socks_current_connections--; }
 
-void reportNewShoesConnection() { shoesCurrentConnections++; }
+void report_new_shoes_connection() { shoes_current_connections++; }
 
-void reportClosedShoesConnection() { shoesCurrentConnections--; }
+void report_closed_shoes_connection() { shoes_current_connections--; }
 
-void reportTransferBytes(uint64_t bytes) { bytesTransferred += bytes; }
+void report_transfer_bytes(uint64_t bytes) { bytes_transferred += bytes; }
 
-uint32_t getHistoricConnections() { return historicConnections; }
-uint32_t getSocksCurrentConnections() { return socksCurrentConnections; }
-uint64_t getBytesTransferred() { return bytesTransferred; }
+uint32_t get_historic_connections() { return historic_connections; }
+uint32_t get_socks_current_connections() { return socks_current_connections; }
+uint64_t get_bytes_transferred() { return bytes_transferred; }
 
-uint32_t getShoesCurrentConnections() { return shoesCurrentConnections; }
+uint32_t get_shoes_current_connections() { return shoes_current_connections; }

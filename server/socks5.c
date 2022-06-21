@@ -14,11 +14,11 @@
 #include <string.h>
 
 #define BUFFER_DEFAULT_SIZE 1024
-uint32_t bufSize = BUFFER_DEFAULT_SIZE;
+uint32_t buf_size = BUFFER_DEFAULT_SIZE;
 
-void socksChangeBufSize(uint32_t size) { bufSize = size; }
+void socks_change_buf_size(uint32_t size) { buf_size = size; }
 
-uint32_t socksGetBufSize() { return bufSize; }
+uint32_t socks_get_buf_size() { return buf_size; }
 
 // CONNECTION_READ
 static void connection_read_init(unsigned state, struct selector_key * key) {
@@ -28,7 +28,7 @@ static void connection_read_init(unsigned state, struct selector_key * key) {
 
 static unsigned connection_read(struct selector_key * key) {
     socks5_connection * conn = (socks5_connection *)key->data;
-    struct connectionParser * parser = &conn->parser.connection;
+    struct connection_parser * parser = &conn->parser.connection;
 
     if (!buffer_can_read(&conn->read_buffer)) {
         // TODO: no se si hay que manejar este caso
@@ -46,7 +46,7 @@ static unsigned connection_read(struct selector_key * key) {
     }
 
     bool error = false;
-    enum connectionState parser_state =
+    enum connection_state parser_state =
         connection_parse(parser, &conn->read_buffer, &error);
 
     bool done = is_connection_finished(parser_state, &error);
@@ -108,7 +108,7 @@ static void authentication_read_init(unsigned state,
 
 static unsigned authentication_read(struct selector_key * key) {
     socks5_connection * conn = (socks5_connection *)key->data;
-    struct authenticationParser * parser = &conn->parser.authentication;
+    struct authentication_parser * parser = &conn->parser.authentication;
 
     if (!buffer_can_read(&conn->read_buffer)) {
         // TODO: no se si hay que manejar este caso
@@ -126,7 +126,7 @@ static unsigned authentication_read(struct selector_key * key) {
     }
 
     bool error = false;
-    enum authenticationState parser_state =
+    enum authentication_state parser_state =
         authentication_parse(parser, &conn->read_buffer, &error);
 
     bool done = is_authentication_finished(parser_state, &error);
@@ -138,9 +138,9 @@ static unsigned authentication_read(struct selector_key * key) {
 
     if (done) {
         conn->user = authenticate_user(&parser->credentials);
-        enum authenticationStatus status = conn->user == NULL
-                                               ? AUTHENTICATION_STATUS_FAILED
-                                               : AUTHENTICATION_STATUS_OK;
+        enum authentication_status status = conn->user == NULL
+                                                ? AUTHENTICATION_STATUS_FAILED
+                                                : AUTHENTICATION_STATUS_OK;
         if (SELECTOR_SUCCESS != selector_set_interest_key(key, OP_WRITE) ||
             generate_authentication_response(&conn->write_buffer, status) ==
                 -1) {
@@ -177,7 +177,7 @@ static unsigned authentication_write(struct selector_key * key) {
 
 // request auxiliar functions
 
-enum socksResponseStatus connect_error_to_socks(const int e) {
+enum socks_response_status connect_error_to_socks(const int e) {
     switch (e) {
     case 0:
         return STATUS_SUCCEDED;
@@ -194,8 +194,8 @@ enum socksResponseStatus connect_error_to_socks(const int e) {
     }
 }
 
-static unsigned setup_response_error(struct requestParser * parser,
-                                     enum socksResponseStatus status,
+static unsigned setup_response_error(struct request_parser * parser,
+                                     enum socks_response_status status,
                                      socks5_connection * conn,
                                      struct selector_key * key) {
     parser->response.status = status;
@@ -211,7 +211,7 @@ static unsigned setup_response_error(struct requestParser * parser,
     return REQUEST_WRITE;
 }
 
-static unsigned init_connection(struct requestParser * parser,
+static unsigned init_connection(struct request_parser * parser,
                                 socks5_connection * conn,
                                 struct selector_key * key) {
     conn->origin_socket =
@@ -295,7 +295,7 @@ static void request_read_init(unsigned state, struct selector_key * key) {
 
 static unsigned request_read(struct selector_key * key) {
     socks5_connection * conn = (socks5_connection *)key->data;
-    struct requestParser * parser = &conn->parser.request;
+    struct request_parser * parser = &conn->parser.request;
 
     if (!buffer_can_read(&conn->read_buffer)) {
         // TODO: no se si hay que manejar este caso
@@ -313,7 +313,7 @@ static unsigned request_read(struct selector_key * key) {
     }
 
     bool error = false;
-    enum requestState parser_state =
+    enum request_state parser_state =
         request_parse(parser, &conn->read_buffer, &error);
 
     bool done = is_request_finished(parser_state, &error);
@@ -383,7 +383,7 @@ static unsigned request_read(struct selector_key * key) {
 
 static unsigned request_resolv(struct selector_key * key) {
     socks5_connection * conn = (socks5_connection *)key->data;
-    struct requestParser * parser = &conn->parser.request;
+    struct request_parser * parser = &conn->parser.request;
 
     if (conn->resolved_addr_current == NULL) {
         if (conn->resolved_addr != NULL) {
@@ -408,7 +408,7 @@ static unsigned request_resolv(struct selector_key * key) {
 
 static unsigned request_connect(struct selector_key * key) {
     socks5_connection * conn = (socks5_connection *)key->data;
-    struct requestParser * parser = &conn->parser.request;
+    struct request_parser * parser = &conn->parser.request;
 
     int error = 0;
     if (getsockopt(conn->origin_socket, SOL_SOCKET, SO_ERROR, &error,
@@ -422,9 +422,9 @@ static unsigned request_connect(struct selector_key * key) {
     }
     if (error) {
         if (parser->request.address_type == ADDRESS_TYPE_DOMAINNAME) {
-            conn->dontClose = true;
+            conn->dont_close = true;
             selector_unregister_fd(key->s, conn->origin_socket);
-            conn->dontClose = false;
+            conn->dont_close = false;
             close(conn->origin_socket);
             return request_resolv(key);
         }
@@ -468,7 +468,7 @@ static unsigned request_connect(struct selector_key * key) {
 
 static unsigned request_write(struct selector_key * key) {
     socks5_connection * conn = (socks5_connection *)key->data;
-    struct requestParser * parser = &conn->parser.request;
+    struct request_parser * parser = &conn->parser.request;
 
     size_t count;
     uint8_t * bufptr = buffer_read_ptr(&conn->write_buffer, &count);
@@ -499,7 +499,7 @@ static unsigned request_write(struct selector_key * key) {
 
 static void copy_init(unsigned state, struct selector_key * key) {
     socks5_connection * conn = (socks5_connection *)key->data;
-    struct Copy * c = &conn->client_copy;
+    struct copy * c = &conn->client_copy;
 
     c->fd = conn->client_socket;
     c->rb = &conn->read_buffer;
@@ -529,7 +529,7 @@ static void copy_init(unsigned state, struct selector_key * key) {
 
 static unsigned copy_read(struct selector_key * key) {
     socks5_connection * conn = (socks5_connection *)key->data;
-    struct Copy * c;
+    struct copy * c;
     if (key->fd == conn->client_socket) {
         c = &conn->client_copy;
     } else if (key->fd == conn->origin_socket) {
@@ -604,7 +604,7 @@ static unsigned copy_read(struct selector_key * key) {
 
 static unsigned copy_write(struct selector_key * key) {
     socks5_connection * conn = (socks5_connection *)key->data;
-    struct Copy * c;
+    struct copy * c;
     if (key->fd == conn->client_socket) {
         c = &conn->client_copy;
     } else if (key->fd == conn->origin_socket) {
@@ -627,7 +627,7 @@ static unsigned copy_write(struct selector_key * key) {
     }
 
     buffer_read_adv(c->rb, len);
-    reportTransferBytes(len);
+    report_transfer_bytes(len);
 
     c->other->interests |= OP_READ;
     c->other->interests &= c->other->connection_interests;

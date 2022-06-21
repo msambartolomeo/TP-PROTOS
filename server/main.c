@@ -35,8 +35,8 @@ int main(int argc, char * const * argv) {
     struct socks5args args;
     parse_args(argc, argv, &args);
 
-    struct user shoesUsers[MAX_USERS] = {{"shoes", "shoes"}};
-    initialize_shoes_users(shoesUsers, 1);
+    struct user shoes_users[MAX_USERS] = {{"shoes", "shoes"}};
+    initialize_shoes_users(shoes_users, 1);
     // TODO Properly initialize_shoes_users();
     init_metrics();
 
