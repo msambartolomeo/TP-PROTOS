@@ -22,28 +22,33 @@ static char * port(char * s) {
     return s;
 }
 
-static void parse_and_add(char * s) {
+static void parse_and_add(char * s, bool shoes) {
     char * p = strchr(s, ':');
     if (p == NULL) {
         fprintf(stderr, "password not found\n");
-        exit(1);
     } else {
         *p = 0;
         p++;
-        switch (add_user(s, p)) {
+        enum add_user_response res;
+        if (shoes) {
+            res = add_user_shoes(s, p);
+        } else {
+            res = add_user(s, p);
+        }
+        switch (res) {
         case ADD_USER_SUCCESS:
             return;
-        case ADD_USER_ALREADY_EXISTS: // TODO: Liberar memoria
-            fprintf(stderr, "User %s already exists, added only once\n", s);
-            return; // No se agrega el usuario y se sigue como si nada
+        case ADD_USER_ALREADY_EXISTS:
+            fprintf(stderr, "User %s added more than once\n", s);
         case ADD_USER_MAX_REACHED:
             fprintf(stderr, "Maximum number of users exceeded\n");
-            exit(1); // TODO: Esto o no agregarlo y seguir
         case ADD_USER_SERV_ERROR:
+        default:
             fprintf(stderr, "Unkown error adding user\n");
-            exit(1);
         }
     }
+    free_users();
+    exit(1);
 }
 
 static void version(void) {
@@ -79,17 +84,17 @@ void parse_args(int argc, char * const * argv, struct socks5args * args) {
     args->shoes_addr = NULL;
     args->shoes_port = "8080";
 
+    int ret_code = 0;
+
     int c;
     while (true) {
         c = getopt(argc, argv, "hl:L:Np:P:u:v");
         if (c == -1)
             break;
-        // TODO: Ahora no hay más free(users) cuando hay error, habría que ver
-        // si hace falta el free_users()
         switch (c) {
         case 'h':
             usage(argv[0]);
-            exit(0);
+                goto finally;
         case 'l':
             args->socks_addr = optarg;
             break;
@@ -102,24 +107,30 @@ void parse_args(int argc, char * const * argv, struct socks5args * args) {
         case 'p':
             args->socks_port = port(optarg);
             if (args->socks_port == NULL) {
-                exit(1);
+                ret_code = 1;
+                goto finally;
             }
             break;
         case 'P':
             args->shoes_port = port(optarg);
             if (args->shoes_port == NULL) {
-                exit(1);
+                ret_code = 1;
+                goto finally;
             }
             break;
         case 'u':
-            parse_and_add(optarg);
+            parse_and_add(optarg, false);
+            break;
+        case 'U':
+            parse_and_add(optarg, true);
             break;
         case 'v':
             version();
-            exit(0);
+                goto finally;
         default:
             fprintf(stderr, "unknown argument %d.\n", c);
-            exit(1);
+                ret_code = 1;
+                goto finally;
         }
     }
     if (optind < argc) {
@@ -128,6 +139,13 @@ void parse_args(int argc, char * const * argv, struct socks5args * args) {
             fprintf(stderr, "%s ", argv[optind++]);
         }
         fprintf(stderr, "\n");
-        exit(1);
+        ret_code = 1;
+        goto finally;
+    }
+
+finally:
+    if (!ret_code) {
+        free_users();
+        exit(ret_code);
     }
 }

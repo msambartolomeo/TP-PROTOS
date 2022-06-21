@@ -33,6 +33,7 @@ enum add_user_response {
     ADD_USER_SERV_ERROR
 };
 enum add_user_response add_user(char * name, char * pass);
+enum add_user_response add_user_shoes(char * name, char * pass);
 
 enum edit_user_response {
     EDIT_USER_SUCCESS,
@@ -40,5 +41,7 @@ enum edit_user_response {
     EDIT_USER_SERV_ERROR
 };
 enum edit_user_response edit_user(char * name, char * pass);
+enum edit_user_response edit_user_shoes(char * name, char * pass);
 
 bool remove_user(char * name);
+bool remove_user_shoes(char * name);
