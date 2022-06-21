@@ -33,6 +33,10 @@ void close_connection(socks5_connection * connection) {
     int client_socket = connection->client_socket;
     int server_socket = connection->origin_socket;
 
+    if(client_socket != -1) {
+        report_closed_socks_connection();
+    }
+
     if (server_socket != -1) {
         selector_unregister_fd(selector, server_socket);
         close(server_socket);
@@ -52,11 +56,12 @@ void close_connection(socks5_connection * connection) {
     free(connection->raw_buffer_a);
     free(connection->raw_buffer_b);
     free(connection);
-
-    report_closed_socks_connection();
 }
 
 void close_shoes_connection(shoes_connection * connection) {
+    if(connection->dont_close) return;
+    connection->dont_close = true;
+
     int client_socket = connection->client_socket;
 
     if (client_socket != -1) {
@@ -131,7 +136,9 @@ static void shoes_connection_write(struct selector_key * key) {
 
 static void shoes_connection_close(struct selector_key * key) {
     shoes_connection * conn = (shoes_connection *)key->data;
-    stm_handler_close(&conn->stm, key);
+
+    close_shoes_connection(conn);
+    //stm_handler_close(&conn->stm, key);
 }
 
 static const struct fd_handler shoes_connection_fd_handler = {
@@ -193,14 +200,14 @@ static void passive_socket_handler(struct selector_key * key) {
     }
     selector_fd_set_nio(conn->client_socket);
 
+    report_new_socks_connection();
+
     if (selector_register(selector, conn->client_socket, &connection_fd_handler,
                           OP_READ, conn)) {
         perror("selector_register error");
         close_connection(conn);
         return;
     }
-
-    report_new_socks_connection();
 }
 
 static void shoes_passive_socket_handler(struct selector_key * key) {

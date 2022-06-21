@@ -1,4 +1,4 @@
-TARGET = client
+TARGET = shoesc
 OBJ_DIR = obj
 INCLUDE_DIRS = include
 

@@ -1,6 +1,6 @@
 *obj
-server/server
-client/client
+server/socks5d
+client/shoesc
 build/*
 .vscode
 .idea/*

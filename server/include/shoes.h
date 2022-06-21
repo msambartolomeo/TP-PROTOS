@@ -23,6 +23,8 @@ enum shoes_state {
 };
 
 typedef struct shoes_connection {
+    bool dont_close;
+
     // Datos del cliente
     struct sockaddr_storage client_addr;
     socklen_t client_addr_len;
