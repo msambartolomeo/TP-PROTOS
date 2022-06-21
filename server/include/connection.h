@@ -1,8 +1,8 @@
 #pragma once
 
-#include <stdint.h>
 #include "buffer.h"
 #include <stdbool.h>
+#include <stdint.h>
 
 enum connectionMethod {
     METHOD_NO_AUTHENTICATION_REQUIRED = 0x00,
@@ -39,9 +39,10 @@ struct connectionParser {
     uint8_t remaining;
 };
 
-void connection_parser_init(struct connectionParser *parser);
+void connection_parser_init(struct connectionParser * parser);
 
-enum connectionState connection_parse(struct connectionParser *parser, buffer *buf, bool *error);
+enum connectionState connection_parse(struct connectionParser * parser,
+                                      buffer * buf, bool * error);
 
 /*
  *  The server selects from one of the methods given in METHODS, and
@@ -56,8 +57,8 @@ enum connectionState connection_parse(struct connectionParser *parser, buffer *b
  *  If the selected METHOD is X'FF', none of the methods listed by the
  *  client are acceptable, and the client MUST close the connection.
  */
-int generate_connection_response(buffer *buf, enum connectionMethod method);
+int generate_connection_response(buffer * buf, enum connectionMethod method);
 
 const char * connection_error(enum connectionState state);
 
-bool is_connection_finished(enum connectionState state, bool *error);
+bool is_connection_finished(enum connectionState state, bool * error);

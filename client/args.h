@@ -12,8 +12,8 @@ struct shoesArgs {
 
     bool useAddr;
     bool usePort;
-    char* addr;
-    char* port;
+    char * addr;
+    char * port;
 
     bool listUsers;
     bool getServerMetrics;
@@ -23,7 +23,7 @@ struct shoesArgs {
     struct shoesUser addUsers[MAX_USERS];
 
     uint8_t nRemoveUsers;
-    char* removeUsers[MAX_USERS];
+    char * removeUsers[MAX_USERS];
 
     uint8_t nEditUsers;
     struct shoesUser editUsers[MAX_USERS];
@@ -40,6 +40,6 @@ struct shoesArgs {
  * args con defaults o la seleccion humana. Puede cortar
  * la ejecución.
  */
-void parse_args(int argc, char** argv, struct shoesArgs* args);
+void parse_args(int argc, char ** argv, struct shoesArgs * args);
 
 #endif

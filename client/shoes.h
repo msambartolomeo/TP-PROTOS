@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 typedef struct shoesUser {
-    char* name;
-    char* pass;
+    char * name;
+    char * pass;
 } shoesUser;
 
 typedef enum shoesFamily { SHOES_GET = 0, SHOES_PUT } shoesFamily;
@@ -31,8 +31,8 @@ typedef enum shoesConnectStatus {
     CONNNECT_INVALID_USER
 } shoesConnectStatus;
 
-shoesConnectStatus shoesConnect(const char* host, const char* port,
-                                const shoesUser* user);
+shoesConnectStatus shoesConnect(const char * host, const char * port,
+                                const shoesUser * user);
 
 typedef enum shoesResponseStatus {
     RESPONSE_SUCCESS = 0,
@@ -48,26 +48,26 @@ typedef struct shoesServerMetrics {
     uint32_t currentConnections;
     uint64_t bytesTransferred;
 } shoesServerMetrics;
-shoesResponseStatus shoesGetMetrics(shoesServerMetrics* metrics);
+shoesResponseStatus shoesGetMetrics(shoesServerMetrics * metrics);
 
 typedef struct shoesUserList {
     uint8_t uCount;
-    char** users;
+    char ** users;
 } shoesUserList;
-shoesResponseStatus shoesGetUserList(shoesUserList* list);
+shoesResponseStatus shoesGetUserList(shoesUserList * list);
 
-shoesResponseStatus shoesGetSpoofingStatus(bool* status);
+shoesResponseStatus shoesGetSpoofingStatus(bool * status);
 
-shoesResponseStatus shoesAddUser(const shoesUser* user);
-shoesResponseStatus shoesRemoveUser(const char* user);
-shoesResponseStatus shoesEditUser(const shoesUser* user);
+shoesResponseStatus shoesAddUser(const shoesUser * user);
+shoesResponseStatus shoesRemoveUser(const char * user);
+shoesResponseStatus shoesEditUser(const shoesUser * user);
 
 shoesResponseStatus shoesModifyBufferSize(uint16_t size);
 shoesResponseStatus shoesModifyPasswordSpoofingStatus(bool status);
 
-const char* shoesHumanReadableStatus();
+const char * shoesHumanReadableStatus();
 
 void shoesCloseConnection();
 
-void freeShoesUser(shoesUser* user);
-void freeShoesUserList(shoesUserList* list);
+void freeShoesUser(shoesUser * user);
+void freeShoesUserList(shoesUserList * list);

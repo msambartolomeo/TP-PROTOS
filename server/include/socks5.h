@@ -1,16 +1,16 @@
 #pragma once
-#include <unistd.h>
-#include <sys/socket.h>
-#include <stdint.h>
-#include <netdb.h>
-#include "buffer.h"
-#include "stm.h"
-#include "connection.h"
 #include "authentication.h"
+#include "buffer.h"
+#include "connection.h"
+#include "pswrdDiss.h"
 #include "request.h"
 #include "selector.h"
-#include "pswrdDiss.h"
+#include "stm.h"
 #include "users.h"
+#include <netdb.h>
+#include <stdint.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 static const uint8_t SOCKS_VERSION = 0x05;
 
@@ -34,7 +34,7 @@ struct Copy {
     buffer *rb, *wb;
     fd_interest interests;
     fd_interest connection_interests;
-    struct Copy *other;
+    struct Copy * other;
 };
 
 typedef struct socks5_connection {
@@ -51,13 +51,13 @@ typedef struct socks5_connection {
     int origin_domain;
     int origin_interests;
 
-   // Para resolucion de nombres
-   struct addrinfo *resolved_addr;
-   struct addrinfo *resolved_addr_current;
+    // Para resolucion de nombres
+    struct addrinfo * resolved_addr;
+    struct addrinfo * resolved_addr_current;
 
-    //Buffers
-    uint8_t* raw_buffer_a;
-    uint8_t* raw_buffer_b;
+    // Buffers
+    uint8_t * raw_buffer_a;
+    uint8_t * raw_buffer_b;
     buffer read_buffer;
     buffer write_buffer;
 
@@ -77,13 +77,14 @@ typedef struct socks5_connection {
     struct Copy origin_copy;
 
     // usuario que creo la conexion
-    const struct user *user;
+    const struct user * user;
 
     bool dontClose;
 
     // TODO: Parsers?
-    // En la implementación de Coda también tiene ClientAddr, ServerAddr, resolución de nombre de origen, estados
-    // de origen y de destino, buffers (tanto raw como struct), y cantidad de referencias al struct.
+    // En la implementación de Coda también tiene ClientAddr, ServerAddr,
+    // resolución de nombre de origen, estados de origen y de destino, buffers
+    // (tanto raw como struct), y cantidad de referencias al struct.
 } socks5_connection;
 
 const struct state_definition * get_socks5_states();

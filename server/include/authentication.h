@@ -1,8 +1,8 @@
 #pragma once
 
-#include <stdint.h>
 #include "buffer.h"
 #include <stdbool.h>
+#include <stdint.h>
 
 static const uint8_t AUTHENTICATION_VERSION = 0x01;
 
@@ -44,14 +44,15 @@ typedef struct credentials {
 struct authenticationParser {
     enum authenticationState state;
     uint8_t remaining;
-    uint8_t *pointer;
+    uint8_t * pointer;
     authentication_credentials credentials;
 };
 
+void authentication_parser_init(struct authenticationParser * parser);
 
-void authentication_parser_init(struct authenticationParser *parser);
-
-enum authenticationState authentication_parse(struct authenticationParser *parser, buffer *buf, bool *error);
+enum authenticationState
+authentication_parse(struct authenticationParser * parser, buffer * buf,
+                     bool * error);
 
 enum authenticationStatus {
     AUTHENTICATION_STATUS_OK = 0,
@@ -72,8 +73,8 @@ enum authenticationStatus {
  *  `failure' (STATUS value other than X'00') status, it MUST close the
  *  connection.
  */
-int generate_authentication_response(buffer *buf, uint8_t status);
+int generate_authentication_response(buffer * buf, uint8_t status);
 
 const char * authentication_error(enum authenticationState state);
 
-bool is_authentication_finished(enum authenticationState state, bool *error);
+bool is_authentication_finished(enum authenticationState state, bool * error);

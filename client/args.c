@@ -20,10 +20,11 @@
 //     return (unsigned short)sl;
 // }
 
-static void user(char* s, struct shoesUser* user) {
-    char* p = strchr(s, ':');
+static void user(char * s, struct shoesUser * user) {
+    char * p = strchr(s, ':');
     if (p == NULL) {
-        fprintf(stderr, "Invalid argument: '%s'.\n Missing password and/or user.\n", s);
+        fprintf(stderr,
+                "Invalid argument: '%s'.\n Missing password and/or user.\n", s);
         exit(1);
     } else {
         *p = 0;
@@ -32,7 +33,7 @@ static void user(char* s, struct shoesUser* user) {
         size_t ulen = strlen(s);
         size_t plen = strlen(p);
 
-        if(ulen > UINT8_MAX || plen > UINT8_MAX) {
+        if (ulen > UINT8_MAX || plen > UINT8_MAX) {
             fprintf(stderr, "User or password is too long.\n");
         }
 
@@ -47,7 +48,7 @@ static void version(void) {
                     "AQUI VA LA LICENCIA\n");
 }
 
-static void usage(const char* progname) {
+static void usage(const char * progname) {
     fprintf(stderr,
             "Usage: %s [OPTION]...\n"
             "\n"
@@ -72,13 +73,13 @@ static void usage(const char* progname) {
     exit(1);
 }
 
-void spoof(const char* s, struct shoesArgs* args) {
-    if(s == NULL) {
+void spoof(const char * s, struct shoesArgs * args) {
+    if (s == NULL) {
         args->getPasswordSpoofingStatus = true;
         return;
     }
 
-    switch(*s) {
+    switch (*s) {
     case '1':
         args->modifySpoofingStatus = true;
         args->newSpoofingStatus = true;
@@ -93,11 +94,11 @@ void spoof(const char* s, struct shoesArgs* args) {
     }
 }
 
-void buf(const char* s, struct shoesArgs* args) {
-    char* endptr;
+void buf(const char * s, struct shoesArgs * args) {
+    char * endptr;
     long val = strtol(s, &endptr, 0);
 
-    if(errno || endptr == s) {
+    if (errno || endptr == s) {
         fprintf(stderr, "Invalid buffer size\n");
         exit(1);
     }
@@ -106,7 +107,7 @@ void buf(const char* s, struct shoesArgs* args) {
     args->bufSize = val;
 }
 
-void parse_args(const int argc, char** argv, struct shoesArgs* args) {
+void parse_args(const int argc, char ** argv, struct shoesArgs * args) {
     memset(args, 0, sizeof(*args));
 
     int c;

@@ -1,14 +1,13 @@
 #pragma once
 
+#include "buffer.h"
 #include <stdint.h>
 #include <stdlib.h>
-#include "buffer.h"
 
 #define USERNAME_MAX_LENGTH 256
 #define PASSWORD_MAX_LENGTH 256
 #define BUFSIZE_MIN_LENGTH 512
 #define BUFSIZE_MAX_LENGTH 65535
-
 
 enum shoesFamily {
     SHOES_GET = 0x00,
@@ -45,10 +44,7 @@ enum shoesPutAddEditUserState {
     PARSE_ADD_EDIT_USER_PASS
 };
 
-enum shoesPutRemoveUserState {
-    PARSE_REMOVE_USER_ULEN,
-    PARSE_REMOVE_USER_USER
-};
+enum shoesPutRemoveUserState { PARSE_REMOVE_USER_ULEN, PARSE_REMOVE_USER_USER };
 
 enum shoesPutModifyBufferState {
     PARSE_BUFFER_SIZE,
@@ -61,21 +57,21 @@ typedef struct shoesPutAddEditUserParser {
     uint8_t username[USERNAME_MAX_LENGTH];
     uint8_t password[PASSWORD_MAX_LENGTH];
     uint8_t remaining;
-    uint8_t *pointer;
+    uint8_t * pointer;
 } shoesPutAddEditUserParser;
 
 typedef struct shoesPutRemoveUserParser {
     enum shoesPutRemoveUserState state;
     uint8_t username[USERNAME_MAX_LENGTH];
     uint8_t remaining;
-    uint8_t *pointer;
+    uint8_t * pointer;
 } shoesPutRemoveUserParser;
 
 typedef struct shoesPutModifyBufferParser {
     enum shoesPutModifyBufferState state;
     uint16_t bufferSize;
     uint8_t remaining;
-    uint8_t *pointer;
+    uint8_t * pointer;
 } shoesPutModifyBufferParser;
 
 typedef enum shoesResponseStatus {
@@ -101,7 +97,7 @@ typedef struct shoesParser {
         enum shoesGetCommands get;
         enum shoesPutCommands put;
     } cmd;
-    void (*parse)(struct shoesParser *parser, uint8_t byte);
+    void (*parse)(struct shoesParser * parser, uint8_t byte);
     union {
         shoesPutAddEditUserParser addEditUserParser;
         shoesPutRemoveUserParser removeUserParser;
@@ -111,7 +107,7 @@ typedef struct shoesParser {
 } shoesParser;
 
 void shoes_request_parse(shoesParser * parser, buffer * buf);
-bool finished_request_parsing(shoesParser* parser);
+bool finished_request_parsing(shoesParser * parser);
 
 enum writeResponseStatus {
     WRITE_RESPONSE_SUCCESS = 0x00,
@@ -119,6 +115,4 @@ enum writeResponseStatus {
     WRITE_RESPONSE_NOT_DONE = 0x02,
 };
 
-
-enum writeResponseStatus writeResponse(buffer *buf, shoesResponse* response);
-
+enum writeResponseStatus writeResponse(buffer * buf, shoesResponse * response);

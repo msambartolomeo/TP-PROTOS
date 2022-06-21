@@ -1,15 +1,15 @@
 #pragma once
+#include "buffer.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include "buffer.h"
 
 // all functions do not modify the buffer
 
 /*
- * As defined in POP3 Extension Mechanism [rfc 2449] the max length of a command is 255 octets
- * including the CRLF, space and the command itself, so that leaves us with a max length of
- * 248 octets for the arguments.
-*/
+ * As defined in POP3 Extension Mechanism [rfc 2449] the max length of a command
+ * is 255 octets including the CRLF, space and the command itself, so that
+ * leaves us with a max length of 248 octets for the arguments.
+ */
 #define POP3_ARGUMENT_LENGTH 249
 #define POP3_COMMAND_LENGTH 5
 
@@ -33,18 +33,20 @@ struct pop3_parser {
     enum pop3State state;
     struct pop3 info;
     uint8_t remaining;
-    uint8_t *current;
+    uint8_t * current;
 };
 
-void pop3_parser_init(struct pop3_parser *parser);
+void pop3_parser_init(struct pop3_parser * parser);
 
-void skip_pop3_check(struct pop3_parser *parser);
+void skip_pop3_check(struct pop3_parser * parser);
 
 // check if the server sends pop3 greeting (+OK)
-enum pop3State check_pop3(uint8_t *buf_ptr, ssize_t n, struct pop3_parser *parser);
+enum pop3State check_pop3(uint8_t * buf_ptr, ssize_t n,
+                          struct pop3_parser * parser);
 
 // checks if the client sends a user or pass pop3 command and saves the argument
-enum pop3State pop3_parse(uint8_t *buf_ptr, ssize_t *n, struct pop3_parser *parser);
+enum pop3State pop3_parse(uint8_t * buf_ptr, ssize_t * n,
+                          struct pop3_parser * parser);
 
 bool do_pop3(enum pop3State state);
 

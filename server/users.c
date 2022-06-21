@@ -1,11 +1,11 @@
 #include "users.h"
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-static struct user *userDatabase[MAX_USERS];
+static struct user * userDatabase[MAX_USERS];
 static uint8_t nUsers;
-static struct user *shoesUserDatabase[MAX_SHOES_USERS];
+static struct user * shoesUserDatabase[MAX_SHOES_USERS];
 static uint8_t snUsers;
 static bool auth_required = false;
 
@@ -19,24 +19,20 @@ void free_users() {
     auth_required = false;
 }
 
-void initialize_shoes_users(struct user *users, uint8_t nusers) {
+void initialize_shoes_users(struct user * users, uint8_t nusers) {
     *shoesUserDatabase = users;
     snUsers = nusers;
 }
 
-bool get_auth_state() {
-    return auth_required;
-}
+bool get_auth_state() { return auth_required; }
 
-void change_auth_state(bool required) {
-    auth_required = required;
-}
+void change_auth_state(bool required) { auth_required = required; }
 
 int compare_users(const char * one, const char * two) {
     return strcmp(one, two) == 0;
 }
 
-static int find_user(char *name) {
+static int find_user(char * name) {
     for (int i = 0; i < nUsers; i++) {
         if (compare_users(userDatabase[i]->name, name)) {
             return i;
@@ -46,7 +42,7 @@ static int find_user(char *name) {
 }
 
 // TODO replace bool with status enum
-enum addUserResponse addUser(char *name, char *pass) {
+enum addUserResponse addUser(char * name, char * pass) {
     if (nUsers == MAX_USERS) {
         return ADD_USER_MAX_REACHED;
     }
@@ -76,7 +72,7 @@ enum addUserResponse addUser(char *name, char *pass) {
     return ADD_USER_SUCCESS;
 }
 
-enum editUserResponse editUser(char *name, char *pass) {
+enum editUserResponse editUser(char * name, char * pass) {
     int i = find_user(name);
     if (i == -1) {
         return EDIT_USER_NOT_FOUND;
@@ -90,15 +86,15 @@ enum editUserResponse editUser(char *name, char *pass) {
     return EDIT_USER_SUCCESS;
 }
 
-bool removeUser(char *name) {
-    if (name == NULL ) {
+bool removeUser(char * name) {
+    if (name == NULL) {
         return false;
     }
     int idx = find_user(name);
     if (idx == -1) {
         return false;
     }
-    struct user *toDel = userDatabase[idx];
+    struct user * toDel = userDatabase[idx];
     userDatabase[idx] = userDatabase[nUsers - 1];
 
     free(toDel->name);
@@ -112,27 +108,33 @@ bool removeUser(char *name) {
     return true;
 }
 
-static enum authenticationStatus authenticate_user_general(authentication_credentials *credentials, struct user **users, uint8_t n) {
+static enum authenticationStatus
+authenticate_user_general(authentication_credentials * credentials,
+                          struct user ** users, uint8_t n) {
     for (int i = 0; i < n; i++) {
-        if (compare_users(users[i]->name, (char *) credentials->username) &&
-            compare_users(users[i]->pass, (char *) credentials->password)) {
+        if (compare_users(users[i]->name, (char *)credentials->username) &&
+            compare_users(users[i]->pass, (char *)credentials->password)) {
             return AUTHENTICATION_STATUS_OK;
         }
     }
     return -1;
 }
 
-const struct user *authenticate_user(authentication_credentials *credentials) {
+const struct user *
+authenticate_user(authentication_credentials * credentials) {
     for (int i = 0; i < nUsers; i++) {
-        if (compare_users(userDatabase[i]->name, (char *) credentials->username) &&
-            compare_users(userDatabase[i]->pass, (char *) credentials->password)) {
+        if (compare_users(userDatabase[i]->name,
+                          (char *)credentials->username) &&
+            compare_users(userDatabase[i]->pass,
+                          (char *)credentials->password)) {
             return userDatabase[i];
         }
     }
     return NULL;
 }
 
-enum authenticationStatus authenticate_shoes_user(authentication_credentials *credentials) {
+enum authenticationStatus
+authenticate_shoes_user(authentication_credentials * credentials) {
     return authenticate_user_general(credentials, shoesUserDatabase, snUsers);
 }
 

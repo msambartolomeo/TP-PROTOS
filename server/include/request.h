@@ -1,9 +1,9 @@
 #pragma once
 
-#include <stdint.h>
 #include "buffer.h"
-#include <stdbool.h>
 #include <netinet/in.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 /*
  *  The SOCKS request is formed as follows:
@@ -147,15 +147,16 @@ struct requestParser {
     socksResponse response;
     enum requestState state;
     uint8_t remaining;
-    uint8_t *pointer;
+    uint8_t * pointer;
 };
 
-void request_parser_init(struct requestParser *parser);
+void request_parser_init(struct requestParser * parser);
 
-enum requestState request_parse(struct requestParser *parser, buffer *buf, bool *error);
+enum requestState request_parse(struct requestParser * parser, buffer * buf,
+                                bool * error);
 
-int generate_response(buffer *buf, socksResponse *response);
+int generate_response(buffer * buf, socksResponse * response);
 
 const char * request_error(enum requestState state);
 
-bool is_request_finished(enum requestState state, bool *error);
+bool is_request_finished(enum requestState state, bool * error);

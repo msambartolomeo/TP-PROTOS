@@ -16,7 +16,7 @@ static void listUsers() {
 
     printf("\nUSERS:\n");
     for (uint8_t i = 0; i < list.uCount; i++) {
-        printf("%d: %s\n", i+1, list.users[i]);
+        printf("%d: %s\n", i + 1, list.users[i]);
     }
 
     freeShoesUserList(&list);
@@ -39,8 +39,7 @@ static void getServerMetrics() {
 
 void getPasswordSpoofingStatus() {
     bool spoofStatus;
-    if (shoesGetSpoofingStatus(&spoofStatus) !=
-        RESPONSE_SUCCESS) {
+    if (shoesGetSpoofingStatus(&spoofStatus) != RESPONSE_SUCCESS) {
         fprintf(stderr, "\nGet spoof status error: %s\n",
                 shoesHumanReadableStatus()); // TODO: better error printing
         return;
@@ -59,7 +58,7 @@ void modifyBufSize(uint32_t size) {
     printf("\nBuffer size modified successfully\n");
 }
 
-void addUsers(struct shoesUser* users, uint8_t len) {
+void addUsers(struct shoesUser * users, uint8_t len) {
     for (int i = 0; i < len; i++) {
         if (shoesAddUser(&users[i]) != RESPONSE_SUCCESS) {
             fprintf(stderr, "\nAdd user error: %s\n",
@@ -71,7 +70,7 @@ void addUsers(struct shoesUser* users, uint8_t len) {
     }
 }
 
-void editUsers(struct shoesUser* users, uint8_t len) {
+void editUsers(struct shoesUser * users, uint8_t len) {
     for (int i = 0; i < len; i++) {
         if (shoesEditUser(&users[i]) != RESPONSE_SUCCESS) {
             fprintf(stderr, "\nEdit user error: %s\n",
@@ -83,13 +82,14 @@ void editUsers(struct shoesUser* users, uint8_t len) {
     }
 }
 
-void removeUsers(char** users, uint8_t len) {
+void removeUsers(char ** users, uint8_t len) {
     for (int i = 0; i < len; i++) {
         if (shoesRemoveUser(users[i]) != RESPONSE_SUCCESS) {
             fprintf(stderr, "\nRemove user error: %s\n",
                     shoesHumanReadableStatus()); // TODO: better error printing
-                    // TODO: @Agus esto falla cuando mandas un usuario inexistente, pero debería decir que no se pudo eliminar
-                    // porque no existe, no que falló.
+            // TODO: @Agus esto falla cuando mandas un usuario inexistente, pero
+            // debería decir que no se pudo eliminar porque no existe, no que
+            // falló.
             return;
         }
 
@@ -98,8 +98,7 @@ void removeUsers(char** users, uint8_t len) {
 }
 
 void modifySpoofingStatus(bool newStatus) {
-    if (shoesModifyPasswordSpoofingStatus(newStatus) !=
-        RESPONSE_SUCCESS) {
+    if (shoesModifyPasswordSpoofingStatus(newStatus) != RESPONSE_SUCCESS) {
         fprintf(stderr, "\nModify spoofing status error: %s\n",
                 shoesHumanReadableStatus()); // TODO: better error printing
         return;
@@ -108,7 +107,7 @@ void modifySpoofingStatus(bool newStatus) {
     printf("\nSpoofing status updated successfully\n");
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char ** argv) {
     struct shoesArgs args;
     parse_args(argc, argv, &args);
 
@@ -117,20 +116,18 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    char* addr = DEFAULT_ADDR;
-    char* port = DEFAULT_PORT;
+    char * addr = DEFAULT_ADDR;
+    char * port = DEFAULT_PORT;
 
-    if(args.usePort) {
+    if (args.usePort) {
         port = args.port;
     }
-    if(args.useAddr) {
+    if (args.useAddr) {
         addr = args.addr;
     }
 
-    if (shoesConnect(addr, port, &args.authUser) !=
-        CONNECT_SUCCESS) {
-        fprintf(stderr, "\nConnect error: %s\n",
-                shoesHumanReadableStatus());
+    if (shoesConnect(addr, port, &args.authUser) != CONNECT_SUCCESS) {
+        fprintf(stderr, "\nConnect error: %s\n", shoesHumanReadableStatus());
         return 1;
     }
 
