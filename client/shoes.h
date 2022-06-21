@@ -39,14 +39,14 @@ typedef enum shoesResponseStatus {
     RESPONSE_SERV_FAIL,
     RESPONSE_FMLY_NOT_SUPPORTED,
     RESPONSE_CMD_NOT_SUPPORTED,
-    RESPONSE_CMD_FAIL_1,
-    RESPONSE_CMD_FAIL_2,
+    RESPONSE_CMD_FAIL_04,
+    RESPONSE_CMD_FAIL_05,
 } shoesResponseStatus;
 
 typedef struct shoesServerMetrics {
     uint32_t historicConnections;
     uint32_t currentConnections;
-    uint32_t bytesTransferred;
+    uint64_t bytesTransferred;
 } shoesServerMetrics;
 shoesResponseStatus shoesGetMetrics(shoesServerMetrics* metrics);
 
@@ -66,6 +66,8 @@ shoesResponseStatus shoesModifyBufferSize(uint16_t size);
 shoesResponseStatus shoesModifyPasswordSpoofingStatus(bool status);
 
 const char* shoesHumanReadableStatus();
+
+void shoesCloseConnection();
 
 void freeShoesUser(shoesUser* user);
 void freeShoesUserList(shoesUserList* list);

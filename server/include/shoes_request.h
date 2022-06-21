@@ -9,11 +9,6 @@
 #define BUFSIZE_MIN_LENGTH 512
 #define BUFSIZE_MAX_LENGTH 65535
 
-struct shoesMetrics {
-    uint32_t historic_connections;
-    uint32_t concurrent_connections;
-    uint32_t bytes_transferred;
-};
 
 enum shoesFamily {
     SHOES_GET = 0x00,
@@ -88,14 +83,15 @@ typedef enum shoesResponseStatus {
     RESPONSE_SERV_FAIL = 0x01,
     RESPONSE_FMLY_NOT_SUPPORTED = 0x02,
     RESPONSE_CMD_NOT_SUPPORTED = 0x03,
-    RESPONSE_CMD_FAIL_1 = 0x04,
-    RESPONSE_CMD_FAIL_SECOND = 0x05
+    RESPONSE_CMD_FAIL_04 = 0x04,
+    RESPONSE_CMD_FAIL_05 = 0x05
 } shoesResponseStatus;
 
 typedef struct shoesResponse {
     shoesResponseStatus status;
     uint8_t * data;
-    size_t dataLen;
+    size_t dataSize;
+    size_t remaining;
 } shoesResponse;
 
 typedef struct shoesParser {

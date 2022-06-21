@@ -42,9 +42,6 @@
             o PLEN      The length of the password.
             o PASSWD    The password.
 
-    Both UNAME and PASSWD are in ISO/IEC 8859-1:1998 character set,
-    also known as 8-bit ASCII.
-
     The server verifies the supplied UNAME and PASSWD, and sends the
     following response:
 
@@ -67,24 +64,18 @@
 3 Requests
 
     Once the authorization process has concluded, the client sends the
-    request details.
-
-    The SHOES request is formed as follows:
-
-            +------+-----+----------+
-            | FMLY | CMD |   DATA   |
-            +------+-----+----------+
-            |  1   |  1  | Variable |
-            +------+-----+----------+
-    Where:
+    request details. Requests formats vary depending on the type of
+    request. However, the following fields are present in any request:
 
               o  FMLY   Family of the request.
                  o  GET Requests X'00'
                  o  PUT Requests X'01'
               o  CMD    Identifies the command to be executed within
               the family specified.
-              o  DATA   Contains the command specific data. Further details
-              can be found in the following sections.
+
+    The following sections go into further detail on the different
+    request types. See section 4 for a description of the response
+    formats.
 
 
 3.1 GET Requests
@@ -127,41 +118,37 @@
 
         3.2.1 ADD USER
             +---------+---------+------+----------+------+----------+
-            |  FMLY   |   CMD   | ULEN |  USNAME  | PLEN |  PASSWD  |
+            |  FMLY   |   CMD   | ULEN |  UNAME   | PLEN |  PASSWD  |
             +---------+---------+------+----------+------+----------+
             |  X'01'  |  X'00'  |  1   | 1 to 255 |  1   | 1 to 255 |
             +---------+---------+------+----------+------+----------+
 
-            Where both USANME and PASSWD are in ISO/IEC 8859-1:1998 character
-            set, also known as 8-bit ASCII. The server will try to create a new
-            user with the given USNAME and PASSWD. If the user already
-            exists, the server will return a failure status.
+            The server will try to create a new user with the given UNAME
+            and PASSWD. If the user already exists, the server will return
+            a failure status.
 
 
         3.2.2 REMOVE USER
             +---------+---------+------+----------+
-            |  FMLY   |   CMD   | ULEN |  USNAME  |
+            |  FMLY   |   CMD   | ULEN |  UNAME   |
             +---------+---------+------+----------+
             |  X'01'  |  X'01'  |  1   | 1 to 255 |
             +---------+---------+------+----------+
 
-            Where USNAME is in ISO/IEC 8859-1:1998 character set, also known
-            as 8-bit ASCII. The server will try to remove the user with the
-            given USNAME. If the user does not exist, the server will return
-            a failure status.
+            The server will try to remove the user with the given UNAME.
+            If the user does not exist, the server will return a failure
+            status.
 
 
         3.2.3 EDIT USER
             +---------+---------+------+----------+------+----------+
-            |  FMLY   |   CMD   | ULEN |  USNAME  | PLEN |  PASSWD  |
+            |  FMLY   |   CMD   | ULEN |  UNAME   | PLEN |  PASSWD  |
             +---------+---------+------+----------+------+----------+
             |  X'01'  |  X'02'  |  1   | 1 to 255 |  1   | 1 to 255 |
             +---------+---------+------+----------+------+----------+
 
-            Where USNAME is in ISO/IEC 8859-1:1998 character set, also known
-            as 8-bit ASCII. The server will try to associate the given USNAME
-            with the given PASSWD. If the user does not exist, the server will
-            return a failure status.
+            The server will try to associate the given UNAME with the given PASSWD.
+            If the user does not exist, the server will return a failure status.
 
 
         3.2.4 MODIFY BUFFER SIZE
@@ -226,7 +213,7 @@
             +--------+-------+-------+---------+
             | STATUS | HCONN | CCONN | BTRANSF |
             +--------+-------+-------+---------+
-            |   1    |   4   |   4   |    4    |
+            |   1    |   4   |   4   |    8    |
             +--------+-------+-------+---------+
 
     Where:
@@ -257,8 +244,6 @@
     is at least one user listed, the server will return a ULEN and a UNAME
     value for each user.
 
-    Each UNAME field will be in ISO/IEC 8859-1:1998 character set, also known
-    as 8-bit ASCII.
 
 4.1.3 PASSWORD SPOOFING STATUS
 
@@ -267,7 +252,7 @@
                 +--------+-------+
                 | STATUS | SPOOF |
                 +--------+-------+
-                |   1    |   4   |
+                |   1    |   1   |
                 +--------+-------+
 
     Where:
@@ -298,3 +283,10 @@
 
     See section 3.2 for more details in accepted values ranges for each
     command.
+
+5 Authors
+
+    The SHOES protocol was developed by:
+        o  Juan Manuel Negro - 61225
+        o  Mauro Daniel Sambartolomeo - 61279
+        o  Agustín Omar Morantes - 61306

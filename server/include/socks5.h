@@ -13,7 +13,6 @@
 #include "users.h"
 
 static const uint8_t SOCKS_VERSION = 0x05;
-#define BUFFER_DEFAULT_SIZE 1024
 
 // Estados de la maquina de estados general
 enum socks5_state {
@@ -57,8 +56,8 @@ typedef struct socks5_connection {
    struct addrinfo *resolved_addr_current;
 
     //Buffers
-    uint8_t raw_buffer_a[BUFFER_DEFAULT_SIZE];
-    uint8_t raw_buffer_b[BUFFER_DEFAULT_SIZE];
+    uint8_t* raw_buffer_a;
+    uint8_t* raw_buffer_b;
     buffer read_buffer;
     buffer write_buffer;
 
@@ -78,7 +77,9 @@ typedef struct socks5_connection {
     struct Copy origin_copy;
 
     // usuario que creo la conexion
-    const struct users *user;
+    const struct user *user;
+
+    bool dontClose;
 
     // TODO: Parsers?
     // En la implementación de Coda también tiene ClientAddr, ServerAddr, resolución de nombre de origen, estados
@@ -86,3 +87,6 @@ typedef struct socks5_connection {
 } socks5_connection;
 
 const struct state_definition * get_socks5_states();
+
+void socksChangeBufSize(uint32_t size);
+uint32_t socksGetBufSize();

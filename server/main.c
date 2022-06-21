@@ -31,10 +31,12 @@ int main(int argc, char* const *argv) {
     signal(SIGTERM, sigterm_handler);
     signal(SIGINT, sigterm_handler);
 
+    close(STDIN_FILENO);
+
     struct socks5args args;
     parse_args(argc, argv, &args);
 
-    struct users shoesUsers[MAX_USERS] = {
+    struct user shoesUsers[MAX_USERS] = {
         {"shoes", "shoes"}
     };
     initialize_shoes_users(shoesUsers, 1);

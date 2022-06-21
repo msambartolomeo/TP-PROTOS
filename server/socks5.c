@@ -13,6 +13,17 @@
 #include "metrics.h"
 #include "logger.h"
 
+#define BUFFER_DEFAULT_SIZE 1024
+uint32_t bufSize = BUFFER_DEFAULT_SIZE;
+
+void socksChangeBufSize(uint32_t size) {
+    bufSize = size;
+}
+
+uint32_t socksGetBufSize() {
+    return bufSize;
+}
+
 // CONNECTION_READ
 static void connection_read_init(unsigned state, struct selector_key *key) {
     socks5_connection * conn = (socks5_connection *)key->data;
@@ -243,6 +254,7 @@ static void* request_resolv_thread(void * arg) {
     ret = getaddrinfo((char *) conn->parser.request.request.destination.fqdn, buf, &hint, &conn->resolved_addr);
     if (ret) {
         fprintf(stderr,"unable to get address info: %s", gai_strerror(ret));
+        freeaddrinfo(conn->resolved_addr);
         conn->resolved_addr = NULL;
     }
 
@@ -318,6 +330,7 @@ static unsigned request_read(struct selector_key *key) {
                             free(k);
                             return setup_response_error(parser, STATUS_GENERAL_SERVER_FAILURE, conn, key);
                         }
+
                         if (selector_set_interest_key(key, OP_NOOP) != SELECTOR_SUCCESS) {
                             return ERROR;
                         }
@@ -368,12 +381,15 @@ static unsigned request_connect(struct selector_key *key) {
     if (getsockopt(conn->origin_socket, SOL_SOCKET, SO_ERROR, &error, &(socklen_t){sizeof(int)})) {
         if (parser->request.address_type == ADDRESS_TYPE_DOMAINNAME) {
             freeaddrinfo(conn->resolved_addr);
+            conn->resolved_addr = NULL;
         }
         return setup_response_error(parser, STATUS_GENERAL_SERVER_FAILURE, conn, key);
     }
     if(error) {
         if (parser->request.address_type == ADDRESS_TYPE_DOMAINNAME) {
+            conn->dontClose = true;
             selector_unregister_fd(key->s, conn->origin_socket);
+            conn->dontClose = false;
             close(conn->origin_socket);
             return request_resolv(key);
         }
@@ -382,6 +398,7 @@ static unsigned request_connect(struct selector_key *key) {
 
     if (parser->request.address_type == ADDRESS_TYPE_DOMAINNAME) {
         freeaddrinfo(conn->resolved_addr);
+        conn->resolved_addr = NULL;
     }
 
     parser->response.status = STATUS_SUCCEDED;
@@ -566,7 +583,7 @@ static unsigned copy_write(struct selector_key *key) {
     }
 
     buffer_read_adv(c->rb, len);
-    report_transfer_bytes(len);
+    reportTransferBytes(len);
 
     c->other->interests |= OP_READ;
     c->other->interests &= c->other->connection_interests;
