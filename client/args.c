@@ -103,6 +103,11 @@ void buf(const char * s, struct shoes_args * args) {
         exit(1);
     }
 
+    if (val > UINT16_MAX) {
+        fprintf(stderr, "Maximum buffer size allowed is %u\n", UINT16_MAX);
+        exit(1);
+    }
+
     args->modify_buf_size = true;
     args->buf_size = val;
 }

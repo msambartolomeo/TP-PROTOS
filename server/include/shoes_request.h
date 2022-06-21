@@ -7,7 +7,6 @@
 #define USERNAME_MAX_LENGTH 256
 #define PASSWORD_MAX_LENGTH 256
 #define BUFSIZE_MIN_LENGTH 512
-#define BUFSIZE_MAX_LENGTH 65535
 
 enum shoes_family {
     SHOES_GET = 0x00,

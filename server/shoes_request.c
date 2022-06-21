@@ -199,9 +199,13 @@ static void shoes_parse_modify_buffer(shoes_parser * parser, uint8_t byte) {
     *(parser->put_parser.modify_buffer_parser.pointer++) = byte;
     parser->put_parser.modify_buffer_parser.remaining--;
     if (parser->put_parser.modify_buffer_parser.remaining == 0) {
-        socks_change_buf_size(
-            parser->put_parser.modify_buffer_parser.buffer_size);
-        fill_response(&parser->response, RESPONSE_SUCCESS, NULL, 0);
+        if (parser->put_parser.modify_buffer_parser.buffer_size < BUFSIZE_MIN_LENGTH) {
+            fill_response(&parser->response, RESPONSE_CMD_FAIL_04, NULL, 0);
+        } else {
+            socks_change_buf_size(
+                    parser->put_parser.modify_buffer_parser.buffer_size);
+            fill_response(&parser->response, RESPONSE_SUCCESS, NULL, 0);
+        }
         parser->state = PARSE_DONE;
     }
 }
