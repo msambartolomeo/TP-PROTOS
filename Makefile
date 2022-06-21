@@ -1,17 +1,17 @@
-SERVER=build/server
-CLIENT=build/client
+SERVER=build/socks5d
+CLIENT=build/shoesc
 
 all: server client
 
 server:
 	@cd server; $(MAKE)
 	@mkdir -p build
-	@cp server/server $(SERVER)
+	@cp server/socks5d $(SERVER)
 
 client:
 	@cd client; $(MAKE)
 	@mkdir -p build
-	@cp client/client $(CLIENT)
+	@cp client/shoesc $(CLIENT)
 
 runserver: $(SERVER)
 	@./$(SERVER)

@@ -1,4 +1,4 @@
-TARGET = server
+TARGET = socks5d
 OBJ_DIR = obj
 INCLUDE_DIRS = include
 
