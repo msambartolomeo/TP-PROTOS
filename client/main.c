@@ -134,22 +134,25 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
-    if (args.list_users)
-        list_users();
-    if (args.get_server_metrics)
-        get_server_metrics();
-    if (args.get_password_spoofing_status)
-        get_password_spoofing_status();
+    //SETTERS
     if (args.modify_buf_size)
         modify_buf_size(args.buf_size);
+    if (args.modify_spoofing_status)
+        modify_spoofing_status(args.new_spoofing_status);
     if (args.n_add_users > 0)
         add_users(args.add_users, args.n_add_users);
     if (args.n_edit_users > 0)
         edit_users(args.edit_users, args.n_edit_users);
     if (args.n_remove_users > 0)
         remove_users(args.remove_users, args.n_remove_users);
-    if (args.modify_spoofing_status)
-        modify_spoofing_status(args.new_spoofing_status);
+
+    //GETTERS
+    if (args.list_users)
+        list_users();
+    if (args.get_server_metrics)
+        get_server_metrics();
+    if (args.get_password_spoofing_status)
+        get_password_spoofing_status();
 
     shoes_close_connection();
 
