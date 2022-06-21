@@ -116,6 +116,7 @@ static const struct fd_handler connectionFdHandler = {
     .handle_read = connection_read,
     .handle_write = connection_write,
     .handle_block = connection_block,
+    .handle_close = connection_close
 };
 
 static void shoesConnectionRead(struct selector_key *key) {
