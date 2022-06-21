@@ -189,7 +189,7 @@ shoes_response_status shoes_get_metrics(shoes_server_metrics * metrics) {
 
 shoes_response_status shoes_get_user_list(shoes_user_list * list) {
     if (send_get_request(CMD_LIST_USERS) == -1) {
-        fprintf(stderr, "Metrics request error\n");
+        fprintf(stderr, "List users request error\n");
         return -1; // TODO
     }
 

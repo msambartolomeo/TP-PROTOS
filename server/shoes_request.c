@@ -32,7 +32,7 @@ enum write_response_status write_response(buffer * buf,
         if (size > 1)
             memcpy(buf_ptr, &response->data[index], size - written_status);
         buffer_write_adv(buf, (ssize_t)size);
-        response->remaining -= (size - written_status);
+        response->remaining -= size;
     }
 
     // if (response->status == RESPONSE_SERV_FAIL) {
@@ -244,10 +244,6 @@ static void generate_metrics_response(shoes_response * response) {
 static void generate_list_response(shoes_response * response) {
     uint8_t u_count = 0;
     struct user ** users = get_socks_users(&u_count);
-    if (u_count == 0) {
-        fill_response(response, RESPONSE_SUCCESS, NULL, 0);
-        return;
-    }
 
     uint8_t * ptr = malloc(1);
     if (ptr == NULL) {
