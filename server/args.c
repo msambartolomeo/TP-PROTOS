@@ -88,7 +88,7 @@ void parse_args(int argc, char * const * argv, struct socks5args * args) {
 
     int c;
     while (true) {
-        c = getopt(argc, argv, "hl:L:Np:P:u:v");
+        c = getopt(argc, argv, "hl:L:Np:P:U:u:v");
         if (c == -1)
             break;
         switch (c) {
@@ -144,7 +144,7 @@ void parse_args(int argc, char * const * argv, struct socks5args * args) {
     }
 
 finally:
-    if (!ret_code) {
+    if (ret_code) {
         free_users();
         exit(ret_code);
     }

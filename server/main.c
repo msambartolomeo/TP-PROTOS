@@ -35,9 +35,6 @@ int main(int argc, char * const * argv) {
     struct socks5args args;
     parse_args(argc, argv, &args);
 
-    struct user shoes_users[MAX_USERS] = {{"shoes", "shoes"}};
-    initialize_shoes_users(shoes_users, 1);
-    // TODO Properly initialize_shoes_users();
     init_metrics();
 
     int retcode = network_handler(args.socks_addr, args.socks_port,

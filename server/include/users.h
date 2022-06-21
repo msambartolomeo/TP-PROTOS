@@ -13,8 +13,6 @@ struct user {
 
 const struct user * authenticate_user(authentication_credentials * credentials);
 
-void initialize_shoes_users(struct user * users, uint8_t nusers);
-
 enum authentication_status
 authenticate_shoes_user(authentication_credentials * credentials);
 

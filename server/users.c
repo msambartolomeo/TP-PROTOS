@@ -1,5 +1,4 @@
 #include "users.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,11 +16,6 @@ void free_users() {
     }
     n_users = 0;
     auth_required = false;
-}
-
-void initialize_shoes_users(struct user * users, uint8_t nusers) {
-    *shoes_user_database = users;
-    sn_users = nusers;
 }
 
 bool get_auth_state() { return auth_required; }
@@ -51,7 +45,7 @@ enum add_user_response add_user_general(char * name, char * pass, struct user **
     }
 
     users[*size] = malloc(sizeof(struct user));
-    if (user_database[n_users] == NULL) {
+    if (users[*size] == NULL) {
         return ADD_USER_SERV_ERROR;
     }
 
@@ -65,15 +59,16 @@ enum add_user_response add_user_general(char * name, char * pass, struct user **
 
     strcpy(users[*size]->name, name);
     strcpy(users[*size]->pass, pass);
-    if (*size == 0) {
-        auth_required = true;
-    }
     *size = *size + 1;
     return ADD_USER_SUCCESS;
 }
 
 enum add_user_response add_user(char * name, char * pass) {
-    return add_user_general(name, pass, user_database, &n_users);
+    enum add_user_response ret = add_user_general(name, pass, user_database, &n_users);
+    if (ret == ADD_USER_SUCCESS && n_users != 0) {
+        auth_required = true;
+    }
+    return ret;
 }
 
 enum add_user_response add_user_shoes(char * name, char * pass) {
