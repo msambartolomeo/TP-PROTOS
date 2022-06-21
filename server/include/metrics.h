@@ -2,15 +2,15 @@
 
 void init_metrics();
 
-void reportNewSocksConnection();
-void reportClosedSocksConnection();
-void reportTransferBytes(uint64_t bytes);
+void report_new_socks_connection();
+void report_closed_socks_connection();
+void report_transfer_bytes(uint64_t bytes);
 
-void reportNewShoesConnection();
-void reportClosedShoesConnection();
+void report_new_shoes_connection();
+void report_closed_shoes_connection();
 
-uint32_t getHistoricConnections();
-uint32_t getSocksCurrentConnections();
-uint64_t getBytesTransferred();
+uint32_t get_historic_connections();
+uint32_t get_socks_current_connections();
+uint64_t get_bytes_transferred();
 
-uint32_t getShoesCurrentConnections();
+uint32_t get_shoes_current_connections();

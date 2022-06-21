@@ -5,11 +5,11 @@
 #include <stdint.h>
 
 struct socks5args {
-    char *socks_addr;
-    char *socks_port;
+    char * socks_addr;
+    char * socks_port;
 
-    char *shoes_addr;
-    char *shoes_port;
+    char * shoes_addr;
+    char * shoes_port;
 };
 
 /**
@@ -17,8 +17,6 @@ struct socks5args {
  * args con defaults o la seleccion humana. Puede cortar
  * la ejecución.
  */
-void 
-parse_args(int argc, char* const *argv, struct socks5args *args);
+void parse_args(int argc, char * const * argv, struct socks5args * args);
 
 #endif
-

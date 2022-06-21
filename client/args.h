@@ -7,32 +7,32 @@
 
 #define MAX_USERS 10
 
-struct shoesArgs {
-    struct shoesUser authUser;
+struct shoes_args {
+    struct shoes_user auth_user;
 
-    bool useAddr;
-    bool usePort;
-    char* addr;
-    char* port;
+    bool use_addr;
+    bool use_port;
+    char * addr;
+    char * port;
 
-    bool listUsers;
-    bool getServerMetrics;
-    bool getPasswordSpoofingStatus;
+    bool list_users;
+    bool get_server_metrics;
+    bool get_password_spoofing_status;
 
-    uint8_t nAddUsers;
-    struct shoesUser addUsers[MAX_USERS];
+    uint8_t n_add_users;
+    struct shoes_user add_users[MAX_USERS];
 
-    uint8_t nRemoveUsers;
-    char* removeUsers[MAX_USERS];
+    uint8_t n_remove_users;
+    char * remove_users[MAX_USERS];
 
-    uint8_t nEditUsers;
-    struct shoesUser editUsers[MAX_USERS];
+    uint8_t n_edit_users;
+    struct shoes_user edit_users[MAX_USERS];
 
-    bool modifyBufSize;
-    uint16_t bufSize;
+    bool modify_buf_size;
+    uint16_t buf_size;
 
-    bool modifySpoofingStatus;
-    bool newSpoofingStatus;
+    bool modify_spoofing_status;
+    bool new_spoofing_status;
 };
 
 /**
@@ -40,6 +40,6 @@ struct shoesArgs {
  * args con defaults o la seleccion humana. Puede cortar
  * la ejecución.
  */
-void parse_args(int argc, char** argv, struct shoesArgs* args);
+void parse_args(int argc, char ** argv, struct shoes_args * args);
 
 #endif

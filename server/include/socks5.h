@@ -1,16 +1,16 @@
 #pragma once
-#include <unistd.h>
-#include <sys/socket.h>
-#include <stdint.h>
-#include <netdb.h>
-#include "buffer.h"
-#include "stm.h"
-#include "connection.h"
 #include "authentication.h"
+#include "buffer.h"
+#include "connection.h"
+#include "pswrdDiss.h"
 #include "request.h"
 #include "selector.h"
-#include "pswrdDiss.h"
+#include "stm.h"
 #include "users.h"
+#include <netdb.h>
+#include <stdint.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 static const uint8_t SOCKS_VERSION = 0x05;
 
@@ -29,12 +29,12 @@ enum socks5_state {
     DONE,
 };
 
-struct Copy {
+struct copy {
     int fd;
     buffer *rb, *wb;
     fd_interest interests;
     fd_interest connection_interests;
-    struct Copy *other;
+    struct copy * other;
 };
 
 typedef struct socks5_connection {
@@ -51,42 +51,43 @@ typedef struct socks5_connection {
     int origin_domain;
     int origin_interests;
 
-   // Para resolucion de nombres
-   struct addrinfo *resolved_addr;
-   struct addrinfo *resolved_addr_current;
+    // Para resolucion de nombres
+    struct addrinfo * resolved_addr;
+    struct addrinfo * resolved_addr_current;
 
-    //Buffers
-    uint8_t* raw_buffer_a;
-    uint8_t* raw_buffer_b;
+    // Buffers
+    uint8_t * raw_buffer_a;
+    uint8_t * raw_buffer_b;
     buffer read_buffer;
     buffer write_buffer;
 
     struct state_machine stm;
 
     union {
-        struct connectionParser connection;
-        struct authenticationParser authentication;
-        struct requestParser request;
+        struct connection_parser connection;
+        struct authentication_parser authentication;
+        struct request_parser request;
     } parser;
 
     // estructura para contraseñas de pop
     struct pop3_parser pop3;
 
     // estructuras para usar en el estado de copy
-    struct Copy client_copy;
-    struct Copy origin_copy;
+    struct copy client_copy;
+    struct copy origin_copy;
 
     // usuario que creo la conexion
-    const struct user *user;
+    const struct user * user;
 
-    bool dontClose;
+    bool dont_close;
 
     // TODO: Parsers?
-    // En la implementación de Coda también tiene ClientAddr, ServerAddr, resolución de nombre de origen, estados
-    // de origen y de destino, buffers (tanto raw como struct), y cantidad de referencias al struct.
+    // En la implementación de Coda también tiene ClientAddr, ServerAddr,
+    // resolución de nombre de origen, estados de origen y de destino, buffers
+    // (tanto raw como struct), y cantidad de referencias al struct.
 } socks5_connection;
 
 const struct state_definition * get_socks5_states();
 
-void socksChangeBufSize(uint32_t size);
-uint32_t socksGetBufSize();
+void socks_change_buf_size(uint32_t size);
+uint32_t socks_get_buf_size();

@@ -1,15 +1,15 @@
 #pragma once
-#include <unistd.h>
-#include <sys/socket.h>
-#include <stdint.h>
-#include <netdb.h>
-#include "buffer.h"
-#include "stm.h"
-#include "connection.h"
 #include "authentication.h"
+#include "buffer.h"
+#include "connection.h"
 #include "request.h"
 #include "selector.h"
 #include "shoes_request.h"
+#include "stm.h"
+#include <netdb.h>
+#include <stdint.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 #define SHOES_BUFFER_DEFAULT_SIZE 1024
 static const uint8_t SHOES_VERSION = 0x01;
@@ -29,9 +29,9 @@ typedef struct shoes_connection {
     int client_socket;
     int client_interests;
 
-    bool isAuthenticated;
+    bool is_authenticated;
 
-    //Buffers
+    // Buffers
     uint8_t raw_buffer_a[SHOES_BUFFER_DEFAULT_SIZE];
     uint8_t raw_buffer_b[SHOES_BUFFER_DEFAULT_SIZE];
     buffer read_buffer;
@@ -40,8 +40,8 @@ typedef struct shoes_connection {
     struct state_machine stm;
 
     union {
-        struct authenticationParser authenticationParser;
-        shoesParser shoesRequestParser;
+        struct authentication_parser authentication_parser;
+        shoes_parser shoes_request_parser;
     } parser;
 } shoes_connection;
 
