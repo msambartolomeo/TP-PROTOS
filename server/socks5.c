@@ -581,7 +581,7 @@ static unsigned copy_read(struct selector_key * key) {
         if (key->fd == conn->client_socket) {
             if (do_pop3(conn->pop3.state)) {
                 while (len > 0) {
-                    if (pop3_parse(bufptr, &len, &conn->pop3) == POP3_DONE) {
+                    if (pop3_parse(&bufptr, &len, &conn->pop3) == POP3_DONE) {
                         logger(LOG_PASSWORD, conn);
                     }
                 }

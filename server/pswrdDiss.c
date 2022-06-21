@@ -82,11 +82,12 @@ static enum pop3_state pop3_parse_argument(struct pop3_parser * parser,
                                            enum pop3_state state) {
     if (byte == '\r' || byte == '\n' || parser->remaining == 0) {
         *parser->current = 0;
-        reset_phase(parser, POP3_PASS_COMMAND);
         switch (state) {
         case POP3_USER:
+            reset_phase(parser, POP3_PASS_COMMAND);
             return parser->state;
         case POP3_PASS:
+            reset_phase(parser, POP3_USER_COMMAND);
             return POP3_DONE;
         default:
             return POP3_ERROR;
@@ -119,7 +120,7 @@ bool do_pop3(enum pop3_state state) {
     return state != POP3_DONE && state != POP3_ERROR && state != POP3_GREETING;
 }
 
-enum pop3_state pop3_parse(uint8_t * buf_ptr, ssize_t * n,
+enum pop3_state pop3_parse(uint8_t ** buf_ptr, ssize_t * n,
                            struct pop3_parser * parser) {
     enum pop3_state state = parser->state;
 
@@ -127,24 +128,24 @@ enum pop3_state pop3_parse(uint8_t * buf_ptr, ssize_t * n,
         return state;
     }
 
-    for (; *n > 0; *n = *n - 1, buf_ptr++) {
+    for (; *n > 0; *n = *n - 1, (*buf_ptr)++) {
         // if theres an error with the line, ignore it
-        if (state == POP3_ERROR && *buf_ptr != '\n')
+        if (state == POP3_ERROR && **buf_ptr != '\n')
             continue;
 
-        state = pop3_parse_byte(parser, *buf_ptr);
+        state = pop3_parse_byte(parser, **buf_ptr);
 
         if (state == POP3_DONE)
             return state;
     }
 
-    if (*n > 0 && *buf_ptr == '\r') {
+    if (*n > 0 && **buf_ptr == '\r') {
         *n = *n - 1;
-        buf_ptr++;
+        (*buf_ptr)++;
     }
-    if (*n > 0 && *buf_ptr == '\n') {
+    if (*n > 0 && **buf_ptr == '\n') {
         *n = *n - 1;
-        buf_ptr++;
+        (*buf_ptr)++;
     }
 
     return parser->state;

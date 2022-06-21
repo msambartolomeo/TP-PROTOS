@@ -415,8 +415,6 @@ finally:
     if (fd_shoes2 != -1)
         close(fd_shoes2);
 
-    selector_destroy(selector);
-
     return ret;
 }
 
