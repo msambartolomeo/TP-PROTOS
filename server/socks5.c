@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BUFFER_DEFAULT_SIZE 1024
+#define BUFFER_DEFAULT_SIZE 4096
 uint32_t buf_size = BUFFER_DEFAULT_SIZE;
 
 void socks_change_buf_size(uint32_t size) { buf_size = size; }

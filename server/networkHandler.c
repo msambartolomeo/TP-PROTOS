@@ -305,7 +305,7 @@ static int create_socket(char * port, char * addr,
         goto finally;
     }
 
-    if (listen(fd, 1) < 0) {
+    if (listen(fd, 50) < 0) {
         error_msg = "listen passive socket error";
         error = true;
         goto finally;
