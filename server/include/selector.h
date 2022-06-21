@@ -190,4 +190,6 @@ selector_status
 selector_notify_block(fd_selector s,
                  const int   fd);
 
+void free_selector_data(fd_selector selector);
+
 #endif
